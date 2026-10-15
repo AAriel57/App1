@@ -12,28 +12,34 @@ let refugios = { type: 'FeatureCollection', features: [] };
 let ruta = null; // { nombre, puntos: [{lat, lon, ele, km}] }
 let islaActiva = 'todas';
 
+const ESTILO = {
+  version: 8,
+  sources: {
+    topo: {
+      type: 'raster',
+      tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`),
+      tileSize: 256,
+      maxzoom: 17,
+      attribution: 'Mapa © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    },
+  },
+  layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
+};
+
 const map = new maplibregl.Map({
   container: 'map',
-  style: {
-    version: 8,
-    sources: {
-      topo: {
-        type: 'raster',
-        tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`),
-        tileSize: 256,
-        maxzoom: 17,
-        attribution: 'Mapa © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      },
-    },
-    layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
-  },
   bounds: ISLAS.todas,
   fitBoundsOptions: { padding: 30 },
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
 
-const mapaListo = new Promise((resolve) => map.on('load', () => iniciarMapa().then(resolve)));
+// El estilo se aplica después de escuchar style.load: con un estilo en línea el evento se emite en el
+// acto, y no esperamos a 'load' porque espera a todas las teselas (OpenTopoMap puede ir lento).
+const mapaListo = new Promise((resolve) => {
+  map.once('style.load', () => iniciarMapa().then(resolve));
+  map.setStyle(ESTILO);
+});
 
 async function iniciarMapa() {
   refugios = await fetch('data/refugios.geojson').then((r) => r.json());

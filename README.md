@@ -19,6 +19,13 @@ powershell -ExecutionPolicy Bypass -File scripts/serve.ps1
 
 Abre http://localhost:8080 y sube `data/ejemplo-prueba.gpx` (track sintético, solo para pruebas).
 
+## Publicación
+La web está en https://aariel57.github.io/App1/ y GitHub Pages la sirve desde la rama `gh-pages`. Para publicar los cambios de `main`:
+
+```bash
+git push origin main:gh-pages
+```
+
 ## Actualizar los refugios desde OpenStreetMap
 
 ```bash
