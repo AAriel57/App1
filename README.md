@@ -7,6 +7,7 @@ Web comunitaria de rutas de BTT conectadas a refugios de montaña en Mallorca, M
 - Subida de un track GPX: distancia, desnivel, altitud máxima y perfil de altimetría.
 - Detecta los refugios a menos de N km de la ruta y los ordena por el km en que aparecen.
 - Filtro por isla.
+- Pestaña «Rutas Mallorca»: travesía de 7 etapas de refugio a refugio (Galatzó → s'Arenalet des Verger), con reparto de asfalto/pista/sendero y descarga en GPX.
 
 Por ahora las rutas solo se procesan en el navegador; todavía no se guardan ni se comparten.
 
@@ -32,10 +33,17 @@ git push origin main:gh-pages
 powershell -ExecutionPolicy Bypass -File scripts/fetch-huts.ps1
 ```
 
+## Regenerar las etapas de Mallorca
+Se calculan con BRouter (perfil trekking) entre los refugios de `data/refugios.geojson` y se guardan en `data/rutas.geojson`:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/fetch-rutas.ps1
+```
+
 ## Datos
-Datos de refugios © colaboradores de OpenStreetMap (ODbL). Mapa base © OpenTopoMap (CC-BY-SA).
+Datos de refugios y caminos © colaboradores de OpenStreetMap (ODbL); rutas calculadas con BRouter. Mapa base © OpenTopoMap (CC-BY-SA).
 
 ## Próximos pasos
 - Backend (Supabase + PostGIS) con cuentas de usuario para publicar y compartir rutas.
 - Añadir y corregir refugios desde la web (Menorca e Eivissa apenas tienen datos en OSM).
-- Fichas de ruta, valoraciones y planificador de travesías refugio a refugio.
+- Fichas de ruta y valoraciones; etapas de BTT con más pista y sendero, revisadas sobre el terreno.

@@ -14,6 +14,9 @@ let refugios = { type: 'FeatureCollection', features: [] };
 let ruta = null; // { nombre, puntos: [{lat, lon, ele, km}] }
 let islaActiva = 'todas';
 let conectadosActuales = [];
+let etapas = []; // [{ n, nombre, puntos, dist, sube, firme: {asfalto, pista, sendero} }]
+let etapaActiva = null; // número de etapa, 0 = travesía completa
+let pestana = 'rutas';
 
 const ESTILO = {
   version: 8,
@@ -66,6 +69,17 @@ const mapaListo = new Promise((resolve) => {
 });
 
 async function iniciarMapa() {
+  // Etapas de la travesía debajo de la ruta seleccionada, que se dibuja encima con la capa 'ruta'
+  map.addSource('etapas', { type: 'geojson', data: vacio() });
+  map.addLayer({
+    id: 'etapas', type: 'line', source: 'etapas',
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: pestana === 'rutas' ? 'visible' : 'none' },
+    paint: { 'line-color': '#9f1239', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 3, 13, 5], 'line-opacity': 0.55 },
+  });
+  map.on('click', 'etapas', (e) => seleccionarEtapa(etapas[e.features[0].properties.etapa - 1]));
+  map.on('mouseenter', 'etapas', () => (map.getCanvas().style.cursor = 'pointer'));
+  map.on('mouseleave', 'etapas', () => (map.getCanvas().style.cursor = ''));
+
   map.addSource('ruta', { type: 'geojson', data: vacio() });
   map.addLayer({ id: 'ruta-borde', type: 'line', source: 'ruta', paint: { 'line-color': '#fff', 'line-width': 7 } });
   map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', paint: { 'line-color': '#e11d48', 'line-width': 4 } });
@@ -99,6 +113,125 @@ async function iniciarMapa() {
   map.on('mouseleave', 'refugios', () => (map.getCanvas().style.cursor = ''));
 
   actualizarIsla();
+  await cargarEtapas();
+}
+
+// ---------- Rutas de Mallorca (etapas de refugio a refugio) ----------
+async function cargarEtapas() {
+  try {
+    const r = await fetch('data/rutas.geojson');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const datos = await r.json();
+    map.getSource('etapas').setData(datos);
+    etapas = datos.features.map((f) => {
+      const p = f.properties;
+      const puntos = conKm(f.geometry.coordinates.map(([lon, lat, ele]) => ({ lon, lat, ele: ele ?? null })));
+      return { n: p.etapa, nombre: p.nombre, puntos, dist: puntos.at(-1).km, sube: desnivel(puntos).sube, firme: { asfalto: p.asfalto, pista: p.pista, sendero: p.sendero } };
+    });
+    pintarEtapas();
+    if (pestana === 'rutas' && !ruta) encuadrarEtapas();
+  } catch (err) {
+    console.error(err);
+    $('rutasResumen').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
+  }
+}
+
+function conKm(puntos) {
+  let km = 0;
+  puntos.forEach((p, i) => { if (i) km += distKm(puntos[i - 1], p); p.km = km; });
+  return puntos;
+}
+
+function pintarEtapas() {
+  const total = etapas.reduce((s, e) => s + e.dist, 0);
+  const sube = etapas.reduce((s, e) => s + (e.sube ?? 0), 0);
+  $('rutasResumen').textContent = `${etapas.length} etapas · ${total.toFixed(0)} km · +${Math.round(sube).toLocaleString('es')} m, de Galatzó a s'Arenalet des Verger por la Serra de Tramuntana`;
+  const ol = $('listaEtapas');
+  ol.innerHTML = '';
+  for (const e of etapas) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.etapa = e.n;
+    b.innerHTML = `<span>${esc(e.nombre)}<small>${e.dist.toFixed(1)} km · +${Math.round(e.sube ?? 0)} m · ${textoFirme(e.firme)}</small></span>`;
+    b.addEventListener('click', () => seleccionarEtapa(e));
+    li.append(b);
+    ol.append(li);
+  }
+  const li = document.createElement('li');
+  li.className = 'completa';
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.etapa = 0;
+  b.innerHTML = `<span>Travesía completa<small>${total.toFixed(0)} km · las ${etapas.length} etapas seguidas</small></span>`;
+  b.addEventListener('click', () => seleccionarEtapa(null));
+  li.append(b);
+  ol.append(li);
+}
+
+const textoFirme = (f) =>
+  [['asfalto', 'asfalto'], ['pista', 'pista'], ['sendero', 'sendero']]
+    .filter(([k]) => f[k] > 0)
+    .map(([k, t]) => `${f[k]} % ${t}`)
+    .join(' · ');
+
+// e = null selecciona la travesía completa
+function seleccionarEtapa(e) {
+  if (!etapas.length) return;
+  mostrarError('');
+  if (e) {
+    etapaActiva = e.n;
+    ruta = { nombre: `Etapa ${e.n}: ${e.nombre}`, puntos: e.puntos.map((p) => ({ ...p })), firme: e.firme };
+  } else {
+    etapaActiva = 0;
+    const puntos = conKm(etapas.flatMap((x) => x.puntos.map((p) => ({ ...p }))));
+    const firme = {};
+    for (const k of ['asfalto', 'pista', 'sendero']) {
+      firme[k] = Math.round(etapas.reduce((s, x) => s + x.firme[k] * x.dist, 0) / puntos.at(-1).km);
+    }
+    ruta = { nombre: 'Travesía completa de Mallorca', puntos, firme };
+  }
+  marcarEtapa();
+  if (movil.matches) abrirPanel(false);
+  dibujarRuta();
+}
+
+function marcarEtapa() {
+  document.querySelectorAll('#listaEtapas button').forEach((b) => {
+    if (etapaActiva != null && +b.dataset.etapa === etapaActiva) b.setAttribute('aria-current', 'true');
+    else b.removeAttribute('aria-current');
+  });
+}
+
+function encuadrarEtapas() {
+  const coords = etapas.flatMap((e) => e.puntos.map((p) => [p.lon, p.lat]));
+  if (!coords.length) return;
+  map.fitBounds(coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0])), { padding: margen(40) });
+}
+
+// ---------- Pestañas del panel ----------
+const pestanas = { rutas: $('tabRutas'), subir: $('tabSubir') };
+const vistas = { rutas: $('vistaRutas'), subir: $('vistaSubir') };
+function cambiarPestana(nueva, foco = false) {
+  pestana = nueva;
+  for (const k of Object.keys(pestanas)) {
+    const activa = k === nueva;
+    pestanas[k].setAttribute('aria-selected', String(activa));
+    pestanas[k].tabIndex = activa ? 0 : -1;
+    vistas[k].hidden = !activa;
+  }
+  if (foco) pestanas[nueva].focus();
+  if (map.getLayer('etapas')) map.setLayoutProperty('etapas', 'visibility', nueva === 'rutas' ? 'visible' : 'none');
+  if (nueva === 'rutas' && !ruta) encuadrarEtapas();
+}
+for (const [k, b] of Object.entries(pestanas)) {
+  b.addEventListener('click', () => cambiarPestana(k));
+  // Flechas para moverse entre pestañas (patrón de pestañas de WAI-ARIA)
+  b.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    cambiarPestana(k === 'rutas' ? 'subir' : 'rutas', true);
+  });
 }
 
 // Margen para encuadrar el mapa sin que lo tape el panel inferior en el móvil
@@ -130,7 +263,7 @@ panel.addEventListener('keydown', (e) => {
 document.querySelector('.saltar').addEventListener('click', () => movil.matches && abrirPanel(true));
 
 function actualizarAsa() {
-  if (!ruta) return ($('asaTexto').textContent = 'Subir ruta y ver refugios');
+  if (!ruta) return ($('asaTexto').textContent = 'Ver rutas y refugios');
   const n = conectadosActuales.length;
   $('asaTexto').textContent = `${ruta.puntos.at(-1).km.toFixed(1)} km · ${n} refugio${n === 1 ? '' : 's'} cerca · ver detalles`;
 }
@@ -285,11 +418,12 @@ async function leerGpx(texto, nombreArchivo) {
     return mostrarError(`«${nombreArchivo}» no contiene ningún track. Asegúrate de exportar la ruta, no solo los puntos de interés.`);
   }
 
-  let km = 0;
-  puntos.forEach((p, i) => { if (i) km += distKm(puntos[i - 1], p); p.km = km; });
+  conKm(puntos);
 
   const nombre = xml.querySelector('trk > name, rte > name, metadata > name')?.textContent.trim() || nombreArchivo.replace(/\.gpx$/i, '');
   ruta = { nombre, puntos };
+  etapaActiva = null;
+  marcarEtapa();
   await mapaListo;
   if (movil.matches) abrirPanel(false); // dejar ver la ruta en el mapa; el resumen queda en el asa
   dibujarRuta();
@@ -309,6 +443,8 @@ function dibujarRuta() {
   $('statUp').textContent = sube == null ? '–' : `${Math.round(sube)} m`;
   $('statDown').textContent = baja == null ? '–' : `${Math.round(baja)} m`;
   $('statMax').textContent = max == null ? '–' : `${Math.round(max)} m`;
+  $('firme').hidden = !ruta.firme;
+  $('firme').textContent = ruta.firme ? `Firme: ${textoFirme(ruta.firme)}` : '';
   dibujarPerfil();
   mostrarConectados();
 
@@ -323,14 +459,35 @@ function dibujarRuta() {
 function quitarRuta() {
   ruta = null;
   conectadosActuales = [];
+  etapaActiva = null;
+  marcarEtapa();
   map.getSource('ruta')?.setData(vacio());
   if (map.getLayer('refugios-conectados')) map.setFilter('refugios-conectados', ['in', ['get', 'id'], ['literal', []]]);
   $('ruta').hidden = true;
   actualizarAsa();
-  map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
+  if (pestana === 'rutas') encuadrarEtapas();
+  else map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
   anunciar('Ruta quitada.');
-  $('gpx').focus();
+  (pestana === 'rutas' ? $('tabRutas') : $('gpx')).focus();
 }
+
+$('descargarGpx').addEventListener('click', () => {
+  const pts = ruta.puntos
+    .map((p) => `<trkpt lat="${p.lat}" lon="${p.lon}">${p.ele != null ? `<ele>${p.ele}</ele>` : ''}</trkpt>`)
+    .join('\n');
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Rutas y Refugios Illes Balears" xmlns="http://www.topografix.com/GPX/1/1">
+<trk><name>${esc(ruta.nombre)}</name><trkseg>
+${pts}
+</trkseg></trk>
+</gpx>
+`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' }));
+  a.download = `${ruta.nombre.normalize('NFD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'ruta'}.gpx`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
 
 function desnivel(puntos) {
   const eles = puntos.map((p) => p.ele).filter((e) => e != null && Number.isFinite(e));

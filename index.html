@@ -27,12 +27,24 @@
     <aside class="panel" id="panel" tabindex="-1" aria-label="Panel de rutas y refugios">
       <button type="button" class="asa" id="asa" aria-expanded="false" aria-controls="panelContenido">
         <span class="asa-barra" aria-hidden="true"></span>
-        <span class="asa-texto" id="asaTexto">Subir ruta y ver refugios</span>
+        <span class="asa-texto" id="asaTexto">Ver rutas y refugios</span>
       </button>
 
       <div class="panel-contenido" id="panelContenido">
-        <section class="subir" aria-labelledby="tSubir">
-          <h2 id="tSubir">Subir ruta</h2>
+        <div class="pestanas" role="tablist" aria-label="Qué quieres ver">
+          <button type="button" role="tab" id="tabRutas" aria-selected="true" aria-controls="vistaRutas">Rutas Mallorca</button>
+          <button type="button" role="tab" id="tabSubir" aria-selected="false" aria-controls="vistaSubir" tabindex="-1">Subir mi ruta</button>
+        </div>
+
+        <section class="rutas" id="vistaRutas" role="tabpanel" aria-labelledby="tabRutas">
+          <h2>Travesía de refugio a refugio</h2>
+          <p class="resumen" id="rutasResumen">Cargando etapas…</p>
+          <ol id="listaEtapas" class="lista-botones etapas" aria-label="Etapas"></ol>
+          <p class="nota">Recorridos en bici calculados automáticamente con <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> sobre OpenStreetMap, sobre todo por pistas y carreteras secundarias. Comprueba los accesos y el estado de los caminos antes de salir.</p>
+        </section>
+
+        <section class="subir" id="vistaSubir" role="tabpanel" aria-labelledby="tabSubir" hidden>
+          <h2 id="tSubir" class="visualmente-oculto">Subir ruta</h2>
           <label class="dropzone" id="dropzone">
             <input type="file" id="gpx" class="oculto" accept=".gpx,application/gpx+xml" aria-describedby="ayudaGpx">
             <strong class="solo-raton">Arrastra un archivo GPX</strong>
@@ -41,11 +53,6 @@
           </label>
           <button type="button" class="enlace" id="ejemplo">Probar con una ruta de ejemplo</button>
           <p class="error" id="error" role="alert" hidden></p>
-
-          <label class="radio" for="radio">
-            Refugios a menos de <output id="radioValor" for="radio">2</output> km de la ruta
-          </label>
-          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
         </section>
 
         <section class="ruta" id="ruta" hidden aria-labelledby="rutaNombre">
@@ -60,7 +67,13 @@
             <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
           </dl>
           <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
+          <p class="firme" id="firme" hidden></p>
+          <button type="button" class="enlace" id="descargarGpx">Descargar GPX</button>
           <h3 id="tConectados">Refugios conectados</h3>
+          <label class="radio" for="radio">
+            A menos de <output id="radioValor" for="radio">2</output> km de la ruta
+          </label>
+          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
           <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
         </section>
 

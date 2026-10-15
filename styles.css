@@ -150,6 +150,21 @@ ol.lista-botones button::before {
 .todos summary { min-height: var(--toque); display: flex; align-items: center; cursor: pointer; color: var(--accent); font-weight: 600; }
 .todos ul { margin-top: 4px; }
 
+/* ---------- Pestañas y rutas de Mallorca ---------- */
+.pestanas { display: flex; gap: 4px; padding: 4px; margin-bottom: 16px; background: var(--bg); border-radius: 10px; }
+.pestanas button {
+  flex: 1; min-height: 40px; padding: 4px 8px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--muted); font-weight: 600; cursor: pointer;
+}
+.pestanas button[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px #0002; }
+.resumen { margin: -4px 0 10px; font-size: 13px; color: var(--muted); }
+.etapas .completa { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+.etapas .completa button::before { content: "↔"; }
+.lista-botones button[aria-current="true"] { background: color-mix(in srgb, var(--ruta) 14%, transparent); }
+.firme { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.ruta .enlace { margin: 4px 0 0; padding: 0; }
+.ruta .radio { margin-top: 0; }
+
 /* ---------- Popups del mapa ---------- */
 .maplibregl-popup-content { color: #1f2a24; font: 14px/1.4 system-ui, sans-serif; padding: 12px 32px 12px 14px; }
 .maplibregl-popup-content h4 { margin: 0 0 4px; font-size: 15px; }
