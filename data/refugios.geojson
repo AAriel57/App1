@@ -1,0 +1,719 @@
+{
+    "type":  "FeatureCollection",
+    "features":  [
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.013649,
+                                                              39.882442
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-612044795",
+                                            "nombre":  "Refugi del Pont Romà",
+                                            "tipo":  "albergue",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "53",
+                                            "capacidad":  "38",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/fr/-/pont-roma-2",
+                                            "telefono":  null,
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.891680,
+                                                              39.818422
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-612044820",
+                                            "nombre":  "Son Amer",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "530",
+                                            "capacidad":  "54",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/es/-/son-amer",
+                                            "telefono":  "+34 971 517 109",
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.793590,
+                                                              39.732297
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-1133652541",
+                                            "nombre":  "Castell d\u0027Alaró",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "821",
+                                            "capacidad":  "30",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/es/-/s-hostatgeria-del-castell-d-alaro",
+                                            "telefono":  "+34 971 182 112",
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.171152,
+                                                              39.873700
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-2661752048",
+                                            "nombre":  "Hostageria Ermita de la Victòria",
+                                            "tipo":  "albergue",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  "https://www.cancalcohotels.com/la-victoria-hostatgeria/",
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.805209,
+                                                              39.688220
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-3114805940",
+                                            "nombre":  "Casa de Colònies s\u0027Olivaret",
+                                            "tipo":  "albergue",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  "http://www.aulanaturasolivaret.com",
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.674186,
+                                                              39.697506
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-3284002579",
+                                            "nombre":  "Leandre Ximenis",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.575332,
+                                                              39.665449
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-node-3786829462",
+                                            "nombre":  "Hort de Son Tries",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  "http://www.refugisontrias.com",
+                                            "telefono":  "+34656232363",
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.470879,
+                                                              39.607267
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-47280929",
+                                            "nombre":  "Galatzó",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.681159,
+                                                              39.796601
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-52612938",
+                                            "nombre":  "Refugi de Muleta",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "100",
+                                            "capacidad":  "30",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/fr/-/muleta-3",
+                                            "telefono":  "+34 971 634271",
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.747389,
+                                                              39.758825
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-81201728",
+                                            "nombre":  "els Cornadors",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.384665,
+                                                              39.747138
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-97668552",
+                                            "nombre":  "s\u0027Alzina",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.370479,
+                                                              39.762447
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-97669654",
+                                            "nombre":  "Caseta des Euguers",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  "IBANAT"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.819149,
+                                                              39.768742
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-98324787",
+                                            "nombre":  "Tossals Verds",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "525",
+                                            "capacidad":  "42",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/es/-/tossals-verds",
+                                            "telefono":  "+34 971 182 027",
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.184910,
+                                                              39.859727
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-136016258",
+                                            "nombre":  "Refugi des Coll Baix",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.378249,
+                                                              39.764830
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-136030096",
+                                            "nombre":  "s’Arenalet des Verger",
+                                            "tipo":  "guardado",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  "IBANAT"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.455680,
+                                                              39.639035
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-149730064",
+                                            "nombre":  "Refugi de sa Coma d\u0027en Vidal",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "545",
+                                            "capacidad":  "24",
+                                            "web":  "https://caminsdepedra.conselldemallorca.cat/es/-/coma-d-en-vidal",
+                                            "telefono":  "+34 971 173 700",
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.727717,
+                                                              39.710067
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-149735612",
+                                            "nombre":  "Cas Garriguer",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.907166,
+                                                              39.882473
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-150013953",
+                                            "nombre":  "Lavanor",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.937380,
+                                                              39.146188
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-211132427",
+                                            "nombre":  "Rosa dels Vents",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.205677,
+                                                              39.732551
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-304264110",
+                                            "nombre":  "Hort de Son Serra",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  "https://www.casalsonserramarina.com/",
+                                            "telefono":  null,
+                                            "operador":  "Jesuïtes"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.187641,
+                                                              39.751508
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-334270594",
+                                            "nombre":  "Refugi de Son Real",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.244762,
+                                                              39.473025
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-340420502",
+                                            "nombre":  "Escola del puig d\u0027Alanar",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.168987,
+                                                              39.948074
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-351806856",
+                                            "nombre":  "Santa Maria de Formentor",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.741090,
+                                                              39.766961
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-396236001",
+                                            "nombre":  "Refugi de Xim Joy (s\u0027Alova)",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.851285,
+                                                              39.785376
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-398017936",
+                                            "nombre":  "sa Caseta des Bosc",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.896351,
+                                                              39.798191
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-409101886",
+                                            "nombre":  "refugi de sa Comuna de Caimari",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.902768,
+                                                              39.841964
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-414258590",
+                                            "nombre":  "Refugi de la Coma de Binifaldó",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.782925,
+                                                              39.780765
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-446554493",
+                                            "nombre":  "Cúber",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  "8",
+                                            "web":  "https://www.caib.es/sites/espaisnaturalsprotegits/es/cuber-22831/",
+                                            "telefono":  "+34 971 17 76 52",
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.973326,
+                                                              39.980513
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-610760507",
+                                            "nombre":  "Albergue juvenil",
+                                            "tipo":  "albergue",
+                                            "isla":  "Menorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              3.828783,
+                                                              40.003079
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-702054151",
+                                            "nombre":  "Alberg Sa Vinyeta",
+                                            "tipo":  "albergue",
+                                            "isla":  "Menorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.559400,
+                                                              39.658208
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-708240023",
+                                            "nombre":  "s\u0027Ermita Vella",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.468711,
+                                                              39.644552
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-879597038",
+                                            "nombre":  "Boal de ses Serveres",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  null,
+                                            "web":  null,
+                                            "telefono":  null,
+                                            "operador":  null
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.654045,
+                                                              39.727025
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-893304312",
+                                            "nombre":  "Refugi de son Moragues",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  "772",
+                                            "capacidad":  null,
+                                            "web":  "https://seu.conselldemallorca.net/refugis/es/ruta/",
+                                            "telefono":  null,
+                                            "operador":  "Consell de Mallorca"
+                                        }
+                     },
+                     {
+                         "type":  "Feature",
+                         "geometry":  {
+                                          "type":  "Point",
+                                          "coordinates":  [
+                                                              2.799441,
+                                                              39.851055
+                                                          ]
+                                      },
+                         "properties":  {
+                                            "id":  "osm-way-981502261",
+                                            "nombre":  "Refugi Port de Sa Calobra",
+                                            "tipo":  "libre",
+                                            "isla":  "Mallorca",
+                                            "altitud":  null,
+                                            "capacidad":  "10",
+                                            "web":  "http://ajescorca2.net/refugi/",
+                                            "telefono":  null,
+                                            "operador":  "Ajuntament d\u0027Escora"
+                                        }
+                     }
+                 ]
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rutas y Refugios · Illes Balears</title>
+  <meta name="description" content="Rutas de BTT conectadas a refugios de montaña en Mallorca, Menorca y Eivissa.">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>🚵 Rutas y Refugios <span>Illes Balears</span></h1>
+    <nav class="islas" aria-label="Islas">
+      <button data-isla="todas" class="activa">Todas</button>
+      <button data-isla="Mallorca">Mallorca</button>
+      <button data-isla="Menorca">Menorca</button>
+      <button data-isla="Eivissa">Eivissa</button>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <section class="subir">
+        <h2>Subir ruta</h2>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="gpx" accept=".gpx,application/gpx+xml" hidden>
+          <strong>Arrastra un archivo GPX</strong>
+          <span>o haz clic para elegirlo</span>
+        </label>
+        <label class="radio">
+          Refugios a menos de <output id="radioValor">2</output> km de la ruta
+          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2">
+        </label>
+      </section>
+
+      <section class="ruta" id="ruta" hidden>
+        <h2 id="rutaNombre">Ruta</h2>
+        <dl class="stats">
+          <div><dt>Distancia</dt><dd id="statDist">–</dd></div>
+          <div><dt>Desnivel +</dt><dd id="statUp">–</dd></div>
+          <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
+          <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
+        </dl>
+        <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
+        <h3>Refugios conectados</h3>
+        <ol id="conectados" class="conectados"></ol>
+      </section>
+
+      <section class="leyenda">
+        <h2>Refugios <small id="contador"></small></h2>
+        <ul>
+          <li><i class="dot guardado"></i>Guardado</li>
+          <li><i class="dot libre"></i>Libre / sin guarda</li>
+          <li><i class="dot albergue"></i>Albergue</li>
+        </ul>
+        <p class="nota" id="notaIsla"></p>
+      </section>
+    </aside>
+
+    <div id="map" class="map"></div>
+  </main>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
