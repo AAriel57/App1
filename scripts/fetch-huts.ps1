@@ -25,7 +25,7 @@ if (-not $raw.TrimStart().StartsWith('{')) {
 $osm = $raw | ConvertFrom-Json
 
 function Get-Isla($lat, $lon) {
-  if ($lon -gt 3.6) { 'Menorca' } elseif ($lon -lt 1.7) { 'Eivissa' } elseif ($lat -lt 39.0) { 'Formentera' } else { 'Mallorca' }
+  if ($lon -gt 3.6) { 'Menorca' } elseif ($lon -lt 1.7 -and $lat -lt 38.82) { 'Formentera' } elseif ($lon -lt 1.7) { 'Eivissa' } else { 'Mallorca' }
 }
 
 $features = foreach ($e in $osm.elements) {

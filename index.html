@@ -2,64 +2,88 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f7d4f">
   <title>Rutas y Refugios · Illes Balears</title>
-  <meta name="description" content="Rutas de BTT conectadas a refugios de montaña en Mallorca, Menorca y Eivissa.">
+  <meta name="description" content="Rutas de BTT conectadas a refugios de montaña en Mallorca, Menorca, Eivissa y Formentera.">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <a class="saltar" href="#panel">Saltar al panel de rutas</a>
+
   <header class="topbar">
-    <h1>🚵 Rutas y Refugios <span>Illes Balears</span></h1>
-    <nav class="islas" aria-label="Islas">
-      <button data-isla="todas" class="activa">Todas</button>
-      <button data-isla="Mallorca">Mallorca</button>
-      <button data-isla="Menorca">Menorca</button>
-      <button data-isla="Eivissa">Eivissa</button>
+    <h1><span aria-hidden="true">🚵</span> Rutas y Refugios <span class="sub">Illes Balears</span></h1>
+    <nav class="islas" aria-label="Filtrar por isla">
+      <button type="button" data-isla="todas" class="activa" aria-pressed="true">Todas</button>
+      <button type="button" data-isla="Mallorca" aria-pressed="false">Mallorca</button>
+      <button type="button" data-isla="Menorca" aria-pressed="false">Menorca</button>
+      <button type="button" data-isla="Eivissa" aria-pressed="false">Eivissa</button>
+      <button type="button" data-isla="Formentera" aria-pressed="false">Formentera</button>
     </nav>
   </header>
 
   <main class="layout">
-    <aside class="panel">
-      <section class="subir">
-        <h2>Subir ruta</h2>
-        <label class="dropzone" id="dropzone">
-          <input type="file" id="gpx" accept=".gpx,application/gpx+xml" hidden>
-          <strong>Arrastra un archivo GPX</strong>
-          <span>o haz clic para elegirlo</span>
-        </label>
-        <label class="radio">
-          Refugios a menos de <output id="radioValor">2</output> km de la ruta
-          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2">
-        </label>
-      </section>
+    <aside class="panel" id="panel" tabindex="-1" aria-label="Panel de rutas y refugios">
+      <button type="button" class="asa" id="asa" aria-expanded="false" aria-controls="panelContenido">
+        <span class="asa-barra" aria-hidden="true"></span>
+        <span class="asa-texto" id="asaTexto">Subir ruta y ver refugios</span>
+      </button>
 
-      <section class="ruta" id="ruta" hidden>
-        <h2 id="rutaNombre">Ruta</h2>
-        <dl class="stats">
-          <div><dt>Distancia</dt><dd id="statDist">–</dd></div>
-          <div><dt>Desnivel +</dt><dd id="statUp">–</dd></div>
-          <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
-          <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
-        </dl>
-        <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
-        <h3>Refugios conectados</h3>
-        <ol id="conectados" class="conectados"></ol>
-      </section>
+      <div class="panel-contenido" id="panelContenido">
+        <section class="subir" aria-labelledby="tSubir">
+          <h2 id="tSubir">Subir ruta</h2>
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="gpx" class="oculto" accept=".gpx,application/gpx+xml" aria-describedby="ayudaGpx">
+            <strong class="solo-raton">Arrastra un archivo GPX</strong>
+            <strong class="solo-tactil">Elegir archivo GPX</strong>
+            <span id="ayudaGpx"><span class="solo-raton">o haz clic para elegirlo · </span>formato .gpx de Strava, Wikiloc, Garmin…</span>
+          </label>
+          <button type="button" class="enlace" id="ejemplo">Probar con una ruta de ejemplo</button>
+          <p class="error" id="error" role="alert" hidden></p>
 
-      <section class="leyenda">
-        <h2>Refugios <small id="contador"></small></h2>
-        <ul>
-          <li><i class="dot guardado"></i>Guardado</li>
-          <li><i class="dot libre"></i>Libre / sin guarda</li>
-          <li><i class="dot albergue"></i>Albergue</li>
-        </ul>
-        <p class="nota" id="notaIsla"></p>
-      </section>
+          <label class="radio" for="radio">
+            Refugios a menos de <output id="radioValor" for="radio">2</output> km de la ruta
+          </label>
+          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
+        </section>
+
+        <section class="ruta" id="ruta" hidden aria-labelledby="rutaNombre">
+          <div class="ruta-cabecera">
+            <h2 id="rutaNombre">Ruta</h2>
+            <button type="button" class="quitar" id="quitarRuta" aria-label="Quitar la ruta">✕</button>
+          </div>
+          <dl class="stats">
+            <div><dt>Distancia</dt><dd id="statDist">–</dd></div>
+            <div><dt>Desnivel +</dt><dd id="statUp">–</dd></div>
+            <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
+            <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
+          </dl>
+          <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
+          <h3 id="tConectados">Refugios conectados</h3>
+          <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
+        </section>
+
+        <section class="leyenda" aria-labelledby="tRefugios">
+          <h2 id="tRefugios">Refugios <small id="contador"></small></h2>
+          <ul class="tipos">
+            <li><i class="dot guardado" aria-hidden="true"></i>Guardado</li>
+            <li><i class="dot libre" aria-hidden="true"></i>Libre / sin guarda</li>
+            <li><i class="dot albergue" aria-hidden="true"></i>Albergue</li>
+          </ul>
+          <p class="nota" id="notaIsla"></p>
+          <details class="todos">
+            <summary>Ver la lista de refugios</summary>
+            <ul id="listaRefugios" class="lista-botones"></ul>
+          </details>
+        </section>
+      </div>
     </aside>
 
-    <div id="map" class="map"></div>
+    <div id="map" class="map" role="region" aria-label="Mapa de refugios y rutas"></div>
   </main>
+
+  <p id="aviso" class="visualmente-oculto" aria-live="polite"></p>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
