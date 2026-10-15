@@ -23,7 +23,9 @@ while ($listener.IsListening) {
     $bytes = [IO.File]::ReadAllBytes($file)
     $ext = [IO.Path]::GetExtension($file).ToLower()
     $ctx.Response.ContentType = if ($types[$ext]) { $types[$ext] } else { 'application/octet-stream' }
-    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    $ctx.Response.ContentLength64 = $bytes.Length
+    # HEAD solo lleva cabeceras; escribir el cuerpo lanza ProtocolViolationException
+    if ($ctx.Request.HttpMethod -ne 'HEAD') { $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length) }
   } else {
     $ctx.Response.StatusCode = 404
   }

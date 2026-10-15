@@ -86,6 +86,7 @@ document.querySelectorAll('.islas button').forEach((btn) =>
 );
 
 function actualizarIsla() {
+  if (!map.getLayer('refugios')) return; // iniciarMapa lo llamará cuando el mapa esté listo
   const filtro = islaActiva === 'todas' ? null : ['==', ['get', 'isla'], islaActiva];
   map.setFilter('refugios', filtro);
   const visibles = refugios.features.filter((f) => islaActiva === 'todas' || f.properties.isla === islaActiva);
