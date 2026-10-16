@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-10-16T10:07:38.651Z",
+        "reason": "Claude: el pulso viene de la hoja vendor de MapLibre (maplibregl-user-location-dot), el punto de ubicacion GPS en vivo del control de geolocalizacion; indica datos reales y cambiantes"
+      }
+    ]
+  }
+}
