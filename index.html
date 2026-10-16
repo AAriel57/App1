@@ -3,9 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#2f7d4f">
+  <meta name="theme-color" content="#fbf9f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1f1d18" media="(prefers-color-scheme: dark)">
   <title>Rutas y Refugios · Illes Balears</title>
   <meta name="description" content="Rutas de BTT conectadas a refugios de montaña en Mallorca, Menorca, Eivissa y Formentera.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -13,8 +17,15 @@
   <a class="saltar" href="#panel">Saltar al panel de rutas</a>
 
   <header class="topbar">
-    <h1><span aria-hidden="true">🚵</span> Rutas y Refugios <span class="sub">Illes Balears</span></h1>
-    <nav class="islas" aria-label="Filtrar por isla">
+    <h1>
+      <svg class="marca" viewBox="0 0 32 32" aria-hidden="true">
+        <path class="marca-monte" d="M1 27 11.5 9.5l5 8 3.5-5L31 27Z"/>
+        <path class="marca-nieve" d="m11.5 9.5-2.7 4.5 1.9-.9 1.6 1.4 1.4-1.7Z"/>
+        <path class="marca-refugio" d="M17 27v-4.6l4-3.4 4 3.4V27h-2.6v-2.7h-2.8V27Z"/>
+      </svg>
+      <span class="titulo">Rutas y Refugios</span> <span class="sub">Illes Balears</span>
+    </h1>
+    <nav class="islas" aria-label="Filtrar refugios por isla">
       <button type="button" data-isla="todas" class="activa" aria-pressed="true">Todas</button>
       <button type="button" data-isla="Mallorca" aria-pressed="false">Mallorca</button>
       <button type="button" data-isla="Menorca" aria-pressed="false">Menorca</button>
@@ -31,34 +42,19 @@
       </button>
 
       <div class="panel-contenido" id="panelContenido">
+        <p class="error" id="error" role="alert" hidden></p>
+
         <div class="pestanas" role="tablist" aria-label="Qué quieres ver">
-          <button type="button" role="tab" id="tabRutas" aria-selected="true" aria-controls="vistaRutas">Rutas Mallorca</button>
+          <button type="button" role="tab" id="tabRutas" aria-selected="true" aria-controls="vistaRutas">Travesías</button>
           <button type="button" role="tab" id="tabSubir" aria-selected="false" aria-controls="vistaSubir" tabindex="-1">Subir mi ruta</button>
         </div>
 
-        <section class="rutas" id="vistaRutas" role="tabpanel" aria-labelledby="tabRutas">
-          <h2>Travesía de refugio a refugio</h2>
-          <p class="resumen" id="rutasResumen">Cargando etapas…</p>
-          <ol id="listaEtapas" class="lista-botones etapas" aria-label="Etapas"></ol>
-          <p class="nota">Recorridos en bici calculados automáticamente con <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> sobre OpenStreetMap, sobre todo por pistas y carreteras secundarias. Comprueba los accesos y el estado de los caminos antes de salir.</p>
-        </section>
-
-        <section class="subir" id="vistaSubir" role="tabpanel" aria-labelledby="tabSubir" hidden>
-          <h2 id="tSubir" class="visualmente-oculto">Subir ruta</h2>
-          <label class="dropzone" id="dropzone">
-            <input type="file" id="gpx" class="oculto" accept=".gpx,application/gpx+xml" aria-describedby="ayudaGpx">
-            <strong class="solo-raton">Arrastra un archivo GPX</strong>
-            <strong class="solo-tactil">Elegir archivo GPX</strong>
-            <span id="ayudaGpx"><span class="solo-raton">o haz clic para elegirlo · </span>formato .gpx de Strava, Wikiloc, Garmin…</span>
-          </label>
-          <button type="button" class="enlace" id="ejemplo">Probar con una ruta de ejemplo</button>
-          <p class="error" id="error" role="alert" hidden></p>
-        </section>
-
         <section class="ruta" id="ruta" hidden aria-labelledby="rutaNombre">
           <div class="ruta-cabecera">
-            <h2 id="rutaNombre">Ruta</h2>
-            <button type="button" class="quitar" id="quitarRuta" aria-label="Quitar la ruta">✕</button>
+            <h2 id="rutaNombre" tabindex="-1">Ruta</h2>
+            <button type="button" class="quitar" id="quitarRuta" aria-label="Quitar la ruta">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
           </div>
           <dl class="stats">
             <div><dt>Distancia</dt><dd id="statDist">–</dd></div>
@@ -66,9 +62,23 @@
             <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
             <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
           </dl>
-          <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
-          <p class="firme" id="firme" hidden></p>
-          <button type="button" class="enlace" id="descargarGpx">Descargar GPX</button>
+          <div class="perfil-caja">
+            <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
+            <span class="perfil-eje perfil-max" id="perfilMax" aria-hidden="true"></span>
+            <span class="perfil-eje perfil-min" id="perfilMin" aria-hidden="true"></span>
+            <div class="perfil-km" aria-hidden="true"><span>0 km</span><span id="perfilKm"></span></div>
+          </div>
+          <div class="firme" id="firme" hidden></div>
+          <div class="ruta-acciones">
+            <button type="button" class="boton primario" id="descargarGpx">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
+              Descargar GPX
+            </button>
+            <button type="button" class="boton" id="centrarRuta">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
+              Centrar en el mapa
+            </button>
+          </div>
           <h3 id="tConectados">Refugios conectados</h3>
           <label class="radio" for="radio">
             A menos de <output id="radioValor" for="radio">2</output> km de la ruta
@@ -77,11 +87,34 @@
           <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
         </section>
 
+        <section class="rutas" id="vistaRutas" role="tabpanel" aria-labelledby="tabRutas">
+          <h2>Travesía de refugio a refugio</h2>
+          <p class="resumen" id="rutasResumen">Cargando etapas…</p>
+          <ol id="listaEtapas" class="lista-botones etapas" aria-label="Etapas"></ol>
+          <div class="sin-travesias" id="sinTravesias" hidden>
+            <p id="sinTravesiasTexto"></p>
+            <button type="button" class="boton" id="verMallorca">Ver las travesías de Mallorca</button>
+          </div>
+          <p class="nota">Recorridos en bici calculados automáticamente con <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> sobre OpenStreetMap, sobre todo por pistas y carreteras secundarias. Comprueba los accesos y el estado de los caminos antes de salir.</p>
+        </section>
+
+        <section class="subir" id="vistaSubir" role="tabpanel" aria-labelledby="tabSubir" hidden>
+          <h2 id="tSubir">Descubre qué refugios tienes cerca</h2>
+          <p class="resumen">Sube el track de tu salida y te mostramos los refugios que quedan junto al recorrido, ordenados por kilómetro.</p>
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="gpx" class="oculto" accept=".gpx,application/gpx+xml" aria-describedby="ayudaGpx">
+            <strong class="solo-raton">Arrastra un archivo GPX</strong>
+            <strong class="solo-tactil">Elegir archivo GPX</strong>
+            <span id="ayudaGpx"><span class="solo-raton">o haz clic para elegirlo · </span>formato .gpx de Strava, Wikiloc, Garmin…</span>
+          </label>
+          <button type="button" class="enlace" id="ejemplo">Probar con una ruta de ejemplo</button>
+        </section>
+
         <section class="leyenda" aria-labelledby="tRefugios">
           <h2 id="tRefugios">Refugios <small id="contador"></small></h2>
           <ul class="tipos">
-            <li><i class="dot guardado" aria-hidden="true"></i>Guardado</li>
-            <li><i class="dot libre" aria-hidden="true"></i>Libre / sin guarda</li>
+            <li><i class="dot guardado" aria-hidden="true"></i>Guardado <small>· con guarda</small></li>
+            <li><i class="dot libre" aria-hidden="true"></i>Libre <small>· sin guarda</small></li>
             <li><i class="dot albergue" aria-hidden="true"></i>Albergue</li>
           </ul>
           <p class="nota" id="notaIsla"></p>

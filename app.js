@@ -5,8 +5,19 @@ const ISLAS = {
   Eivissa: [[1.15, 38.83], [1.63, 39.13]],
   Formentera: [[1.37, 38.63], [1.6, 38.81]],
 };
-const COLORES = { guardado: '#c2410c', libre: '#2563eb', albergue: '#7c3aed' };
+// Los colores del mapa salen de los tokens de styles.css para no duplicarlos
+const css = getComputedStyle(document.documentElement);
+const color = (nombre) => css.getPropertyValue(`--${nombre}`).trim();
+const COLORES = { guardado: color('guardado'), libre: color('libre'), albergue: color('albergue'), ruta: color('ruta'), etapas: color('etapas'), tinta: color('tinta') };
 const TIPO_TEXTO = { guardado: 'Refugio guardado', libre: 'Refugio libre', albergue: 'Albergue' };
+const ISLAS_CON_TRAVESIAS = ['todas', 'Mallorca'];
+
+// Números en formato español: 28,5 km
+const nf1 = new Intl.NumberFormat('es', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf0 = new Intl.NumberFormat('es', { maximumFractionDigits: 0 });
+const fKm = (x) => `${nf1.format(x)} km`;
+const fM = (x) => `${nf0.format(Math.round(x))} m`;
+const plural = (n, s) => `${n} ${s}${n === 1 ? '' : 's'}`;
 
 const $ = (id) => document.getElementById(id);
 const movil = matchMedia('(max-width: 760px)');
@@ -48,7 +59,8 @@ const LOCALE = {
 
 const map = new maplibregl.Map({
   container: 'map',
-  bounds: ISLAS.todas,
+  // La pestaña inicial es la de travesías: empezar ya en Mallorca evita un salto desde todo el Mediterráneo
+  bounds: ISLAS.Mallorca,
   fitBoundsOptions: { padding: 30 },
   locale: LOCALE,
   cooperativeGestures: false,
@@ -71,18 +83,26 @@ const mapaListo = new Promise((resolve) => {
 async function iniciarMapa() {
   // Etapas de la travesía debajo de la ruta seleccionada, que se dibuja encima con la capa 'ruta'
   map.addSource('etapas', { type: 'geojson', data: vacio() });
+  // Trazo opaco con borde blanco: se tiene que leer sobre el relieve también a pleno sol
+  const visibilidad = etapasVisibles() ? 'visible' : 'none';
+  const ancho = (a, b) => ['interpolate', ['linear'], ['zoom'], 8, a, 13, b];
+  map.addLayer({
+    id: 'etapas-borde', type: 'line', source: 'etapas',
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: visibilidad },
+    paint: { 'line-color': '#fff', 'line-width': ancho(5, 8), 'line-opacity': 0.9 },
+  });
   map.addLayer({
     id: 'etapas', type: 'line', source: 'etapas',
-    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: pestana === 'rutas' ? 'visible' : 'none' },
-    paint: { 'line-color': '#9f1239', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 3, 13, 5], 'line-opacity': 0.55 },
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: visibilidad },
+    paint: { 'line-color': COLORES.etapas, 'line-width': ancho(2.5, 4.5) },
   });
   map.on('click', 'etapas', (e) => seleccionarEtapa(etapas[e.features[0].properties.etapa - 1]));
   map.on('mouseenter', 'etapas', () => (map.getCanvas().style.cursor = 'pointer'));
   map.on('mouseleave', 'etapas', () => (map.getCanvas().style.cursor = ''));
 
   map.addSource('ruta', { type: 'geojson', data: vacio() });
-  map.addLayer({ id: 'ruta-borde', type: 'line', source: 'ruta', paint: { 'line-color': '#fff', 'line-width': 7 } });
-  map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', paint: { 'line-color': '#e11d48', 'line-width': 4 } });
+  map.addLayer({ id: 'ruta-borde', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
+  map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': COLORES.ruta, 'line-width': 5 } });
 
   const r = await fetch('data/refugios.geojson');
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -96,16 +116,17 @@ async function iniciarMapa() {
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 6, 14, 10],
       'circle-color': ['match', ['get', 'tipo'], 'guardado', COLORES.guardado, 'albergue', COLORES.albergue, COLORES.libre],
-      'circle-stroke-color': '#fff',
+      'circle-stroke-color': COLORES.tinta,
       'circle-stroke-width': 2,
     },
   });
+  // Anillo de tinta (no rojo) para que no se confunda con el trazo de la ruta
   map.addLayer({
     id: 'refugios-conectados',
     type: 'circle',
     source: 'refugios',
     filter: ['in', ['get', 'id'], ['literal', []]],
-    paint: { 'circle-radius': 15, 'circle-color': 'transparent', 'circle-stroke-color': '#e11d48', 'circle-stroke-width': 3 },
+    paint: { 'circle-radius': 16, 'circle-color': '#ffffffcc', 'circle-stroke-color': COLORES.tinta, 'circle-stroke-width': 3 },
   }, 'refugios');
 
   map.on('click', 'refugios', (e) => abrirPopup(e.features[0]));
@@ -129,7 +150,8 @@ async function cargarEtapas() {
       return { n: p.etapa, nombre: p.nombre, puntos, dist: puntos.at(-1).km, sube: desnivel(puntos).sube, firme: { asfalto: p.asfalto, pista: p.pista, sendero: p.sendero } };
     });
     pintarEtapas();
-    if (pestana === 'rutas' && !ruta) encuadrarEtapas();
+    actualizarVistaRutas();
+    if (etapasVisibles() && !ruta) encuadrarEtapas();
   } catch (err) {
     console.error(err);
     $('rutasResumen').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
@@ -145,7 +167,7 @@ function conKm(puntos) {
 function pintarEtapas() {
   const total = etapas.reduce((s, e) => s + e.dist, 0);
   const sube = etapas.reduce((s, e) => s + (e.sube ?? 0), 0);
-  $('rutasResumen').textContent = `${etapas.length} etapas · ${total.toFixed(0)} km · +${Math.round(sube).toLocaleString('es')} m, de Galatzó a s'Arenalet des Verger por la Serra de Tramuntana`;
+  $('rutasResumen').textContent = `Mallorca · ${etapas.length} etapas · ${nf0.format(total)} km · +${fM(sube)}, de Galatzó a s'Arenalet des Verger por la Serra de Tramuntana.`;
   const ol = $('listaEtapas');
   ol.innerHTML = '';
   for (const e of etapas) {
@@ -153,7 +175,7 @@ function pintarEtapas() {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.etapa = e.n;
-    b.innerHTML = `<span>${esc(e.nombre)}<small>${e.dist.toFixed(1)} km · +${Math.round(e.sube ?? 0)} m · ${textoFirme(e.firme)}</small></span>`;
+    b.innerHTML = `<span>${esc(e.nombre)}<small>${fKm(e.dist)} · +${fM(e.sube ?? 0)}</small>${barraFirme(e.firme)}<span class="visualmente-oculto">. Firme: ${textoFirme(e.firme)}</span></span>`;
     b.addEventListener('click', () => seleccionarEtapa(e));
     li.append(b);
     ol.append(li);
@@ -163,17 +185,41 @@ function pintarEtapas() {
   const b = document.createElement('button');
   b.type = 'button';
   b.dataset.etapa = 0;
-  b.innerHTML = `<span>Travesía completa<small>${total.toFixed(0)} km · las ${etapas.length} etapas seguidas</small></span>`;
+  b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="2"/><circle cx="19" cy="7" r="2"/><path d="M7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6"/></svg><span>Travesía completa<small>${nf0.format(total)} km · las ${etapas.length} etapas seguidas</small></span>`;
   b.addEventListener('click', () => seleccionarEtapa(null));
   li.append(b);
   ol.append(li);
 }
 
-const textoFirme = (f) =>
-  [['asfalto', 'asfalto'], ['pista', 'pista'], ['sendero', 'sendero']]
-    .filter(([k]) => f[k] > 0)
-    .map(([k, t]) => `${f[k]} % ${t}`)
-    .join(' · ');
+const TIPOS_FIRME = ['asfalto', 'pista', 'sendero'];
+
+// Reparte el redondeo para que los porcentajes sumen siempre 100
+function firme100(f) {
+  const r = Object.fromEntries(TIPOS_FIRME.map((k) => [k, Math.max(0, Math.round(f[k] ?? 0))]));
+  const dif = 100 - TIPOS_FIRME.reduce((s, k) => s + r[k], 0);
+  if (dif) {
+    const mayor = TIPOS_FIRME.reduce((a, b) => (r[b] > r[a] ? b : a));
+    r[mayor] += dif;
+  }
+  return r;
+}
+
+const textoFirme = (f) => {
+  const r = firme100(f);
+  return TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `${r[k]} % ${k}`).join(' · ');
+};
+
+const barraFirme = (f) => {
+  const r = firme100(f);
+  return `<span class="barra-firme" aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<i class="${k}" style="flex: ${r[k]}"></i>`).join('')}</span>`;
+};
+
+function pintarFirme(f) {
+  const r = firme100(f);
+  $('firme').innerHTML =
+    `<span class="visualmente-oculto">Firme: ${textoFirme(f)}</span>${barraFirme(f)}` +
+    `<ul aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<li><i class="muestra ${k}"></i><b>${r[k]} %</b> ${k}</li>`).join('')}</ul>`;
+}
 
 // e = null selecciona la travesía completa
 function seleccionarEtapa(e) {
@@ -194,6 +240,29 @@ function seleccionarEtapa(e) {
   marcarEtapa();
   if (movil.matches) abrirPanel(false);
   dibujarRuta();
+  enfocarRuta();
+}
+
+// En escritorio el detalle queda a la vista y recibe el foco; en el móvil el panel está plegado y manda el mapa
+function enfocarRuta() {
+  if (movil.matches) return;
+  $('panel').scrollTo({ top: 0 });
+  $('rutaNombre').focus({ preventScroll: true });
+}
+
+function etapasVisibles() {
+  return pestana === 'rutas' && ISLAS_CON_TRAVESIAS.includes(islaActiva);
+}
+
+// La pestaña de travesías respeta el filtro de isla: fuera de Mallorca muestra un estado vacío honesto
+function actualizarVistaRutas() {
+  const hay = ISLAS_CON_TRAVESIAS.includes(islaActiva);
+  $('listaEtapas').hidden = !hay;
+  $('rutasResumen').hidden = !hay;
+  $('sinTravesias').hidden = hay;
+  if (!hay) $('sinTravesiasTexto').textContent = `Aún no hay travesías en ${islaActiva}. De momento solo hay etapas de refugio a refugio en Mallorca.`;
+  const vis = etapasVisibles() ? 'visible' : 'none';
+  for (const id of ['etapas-borde', 'etapas']) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
 }
 
 function marcarEtapa() {
@@ -221,18 +290,20 @@ function cambiarPestana(nueva, foco = false) {
     vistas[k].hidden = !activa;
   }
   if (foco) pestanas[nueva].focus();
-  if (map.getLayer('etapas')) map.setLayoutProperty('etapas', 'visibility', nueva === 'rutas' ? 'visible' : 'none');
-  if (nueva === 'rutas' && !ruta) encuadrarEtapas();
+  actualizarVistaRutas();
+  if (etapasVisibles() && !ruta) encuadrarEtapas();
 }
 for (const [k, b] of Object.entries(pestanas)) {
   b.addEventListener('click', () => cambiarPestana(k));
-  // Flechas para moverse entre pestañas (patrón de pestañas de WAI-ARIA)
+  // Flechas, Inicio y Fin para moverse entre pestañas (patrón de pestañas de WAI-ARIA)
   b.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const destino = { ArrowLeft: k === 'rutas' ? 'subir' : 'rutas', ArrowRight: k === 'rutas' ? 'subir' : 'rutas', Home: 'rutas', End: 'subir' }[e.key];
+    if (!destino) return;
     e.preventDefault();
-    cambiarPestana(k === 'rutas' ? 'subir' : 'rutas', true);
+    cambiarPestana(destino, true);
   });
 }
+$('verMallorca').addEventListener('click', () => document.querySelector('.islas [data-isla="Mallorca"]').click());
 
 // Margen para encuadrar el mapa sin que lo tape el panel inferior en el móvil
 function margen(base) {
@@ -247,11 +318,16 @@ const asa = $('asa');
 function abrirPanel(abierto) {
   panel.classList.toggle('abierto', abierto);
   asa.setAttribute('aria-expanded', String(abierto));
+  actualizarAsa();
 }
 asa.addEventListener('click', () => {
   const abrir = !panel.classList.contains('abierto');
   abrirPanel(abrir);
-  if (abrir && ruta) $('ruta').scrollIntoView({ block: 'start' }); // ir directo a los resultados
+  // Ir directo a los resultados desplazando solo el contenido, para que el asa siga a la vista
+  if (abrir && ruta) {
+    panel.scrollTop = 0;
+    $('panelContenido').scrollTop = $('ruta').offsetTop - $('panelContenido').offsetTop;
+  }
 });
 panel.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && movil.matches && panel.classList.contains('abierto')) {
@@ -263,9 +339,11 @@ panel.addEventListener('keydown', (e) => {
 document.querySelector('.saltar').addEventListener('click', () => movil.matches && abrirPanel(true));
 
 function actualizarAsa() {
-  if (!ruta) return ($('asaTexto').textContent = 'Ver rutas y refugios');
-  const n = conectadosActuales.length;
-  $('asaTexto').textContent = `${ruta.puntos.at(-1).km.toFixed(1)} km · ${n} refugio${n === 1 ? '' : 's'} cerca · ver detalles`;
+  const texto = $('asaTexto');
+  if (panel.classList.contains('abierto')) return (texto.textContent = 'Ver el mapa');
+  if (!ruta) return (texto.textContent = 'Ver rutas y refugios');
+  const nombre = etapaActiva > 0 ? `Etapa ${etapaActiva}` : etapaActiva === 0 ? 'Travesía completa' : ruta.nombre;
+  texto.textContent = `${nombre} · ${fKm(ruta.puntos.at(-1).km)} · ${plural(conectadosActuales.length, 'refugio')} cerca`;
 }
 
 // ---------- Avisos accesibles ----------
@@ -290,10 +368,13 @@ botonesIsla.forEach((btn) =>
       b.classList.toggle('activa', b === btn);
       b.setAttribute('aria-pressed', String(b === btn));
     });
+    // Una etapa de Mallorca no tiene sentido con el mapa en otra isla: se quita para no mostrar datos cruzados
+    if (etapaActiva != null && !ISLAS_CON_TRAVESIAS.includes(islaActiva)) quitarRuta({ encuadrar: false, foco: false });
     actualizarIsla();
+    actualizarVistaRutas();
     map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
     const n = visiblesEnIsla().length;
-    anunciar(`${islaActiva === 'todas' ? 'Todas las islas' : islaActiva}: ${n} refugio${n === 1 ? '' : 's'}.`);
+    anunciar(`${islaActiva === 'todas' ? 'Todas las islas' : islaActiva}: ${plural(n, 'refugio')}.`);
   })
 );
 
@@ -324,7 +405,7 @@ function pintarListaRefugios(visibles) {
     .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es'))
     .forEach((f) => {
       const p = f.properties;
-      ul.append(botonRefugio(f, `${esc(p.nombre)}<small>${TIPO_TEXTO[p.tipo]}${p.altitud ? ` · ${esc(p.altitud)} m` : ''}</small>`, true));
+      ul.append(botonRefugio(f, `${esc(p.nombre)}<small>${TIPO_TEXTO[p.tipo]}${p.altitud ? ` · altitud ${esc(p.altitud)} m` : ''}</small>`, true));
     });
 }
 
@@ -347,9 +428,11 @@ function irARefugio(f, origen) {
 let popup = null, alCerrar = null;
 function abrirPopup(f, origen) {
   const p = f.properties;
+  const enRuta = ruta && conectadosActuales.find((c) => c.f.properties.id === p.id);
   const filas = [
     `<h4>${esc(p.nombre)}</h4>`,
     `<p>${TIPO_TEXTO[p.tipo]} · ${esc(p.isla)}</p>`,
+    enRuta && `<p class="en-ruta">En el km ${nf1.format(enRuta.km)} de la ruta · ${textoDesvio(enRuta.dist)}</p>`,
     p.altitud && `<p>Altitud: ${esc(p.altitud)} m</p>`,
     p.capacidad && `<p>Plazas: ${esc(p.capacidad)}</p>`,
     p.operador && `<p>Gestión: ${esc(p.operador)}</p>`,
@@ -395,12 +478,16 @@ $('ejemplo').addEventListener('click', async () => {
   }
 });
 $('radio').addEventListener('input', () => {
-  const v = $('radio').value;
+  const v = String(+$('radio').value).replace('.', ',');
   $('radioValor').textContent = v;
   $('radio').setAttribute('aria-valuetext', `${v} kilómetros`);
   if (ruta) mostrarConectados(true);
 });
-$('quitarRuta').addEventListener('click', quitarRuta);
+$('quitarRuta').addEventListener('click', () => quitarRuta());
+$('centrarRuta').addEventListener('click', () => {
+  if (movil.matches) abrirPanel(false);
+  encuadrarRuta();
+});
 
 async function leerGpx(texto, nombreArchivo) {
   mostrarError('');
@@ -427,36 +514,42 @@ async function leerGpx(texto, nombreArchivo) {
   await mapaListo;
   if (movil.matches) abrirPanel(false); // dejar ver la ruta en el mapa; el resumen queda en el asa
   dibujarRuta();
+  enfocarRuta();
+}
+
+function encuadrarRuta() {
+  const coords = ruta.puntos.map((p) => [p.lon, p.lat]);
+  map.fitBounds(coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0])), { padding: margen(50) });
 }
 
 function dibujarRuta() {
   const coords = ruta.puntos.map((p) => [p.lon, p.lat]);
   map.getSource('ruta').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} });
-  const b = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  map.fitBounds(b, { padding: margen(50) });
+  encuadrarRuta();
 
   const { sube, baja, max } = desnivel(ruta.puntos);
   const dist = ruta.puntos.at(-1).km;
   $('ruta').hidden = false;
   $('rutaNombre').textContent = ruta.nombre;
-  $('statDist').textContent = `${dist.toFixed(1)} km`;
-  $('statUp').textContent = sube == null ? '–' : `${Math.round(sube)} m`;
-  $('statDown').textContent = baja == null ? '–' : `${Math.round(baja)} m`;
-  $('statMax').textContent = max == null ? '–' : `${Math.round(max)} m`;
+  $('statDist').textContent = fKm(dist);
+  $('statUp').textContent = sube == null ? '–' : fM(sube);
+  $('statDown').textContent = baja == null ? '–' : fM(baja);
+  $('statMax').textContent = max == null ? '–' : fM(max);
   $('firme').hidden = !ruta.firme;
-  $('firme').textContent = ruta.firme ? `Firme: ${textoFirme(ruta.firme)}` : '';
+  if (ruta.firme) pintarFirme(ruta.firme);
+  else $('firme').innerHTML = '';
   dibujarPerfil();
   mostrarConectados();
 
   const n = conectadosActuales.length;
   anunciar(
-    `Ruta «${ruta.nombre}» cargada: ${dist.toFixed(1)} kilómetros` +
-      (sube != null ? `, ${Math.round(sube)} metros de desnivel positivo` : '') +
-      `. ${n ? `${n} refugio${n === 1 ? '' : 's'} a menos de ${$('radio').value} km.` : 'Ningún refugio cerca.'}`
+    `Ruta «${ruta.nombre}» cargada: ${nf1.format(dist)} kilómetros` +
+      (sube != null ? `, ${nf0.format(Math.round(sube))} metros de desnivel positivo` : '') +
+      `. ${n ? `${plural(n, 'refugio')} a menos de ${$('radioValor').textContent} km.` : 'Ningún refugio cerca.'}`
   );
 }
 
-function quitarRuta() {
+function quitarRuta({ encuadrar = true, foco = true } = {}) {
   ruta = null;
   conectadosActuales = [];
   etapaActiva = null;
@@ -465,10 +558,12 @@ function quitarRuta() {
   if (map.getLayer('refugios-conectados')) map.setFilter('refugios-conectados', ['in', ['get', 'id'], ['literal', []]]);
   $('ruta').hidden = true;
   actualizarAsa();
-  if (pestana === 'rutas') encuadrarEtapas();
-  else map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
+  if (encuadrar) {
+    if (etapasVisibles()) encuadrarEtapas();
+    else map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
+  }
   anunciar('Ruta quitada.');
-  (pestana === 'rutas' ? $('tabRutas') : $('gpx')).focus();
+  if (foco) (pestana === 'rutas' ? $('tabRutas') : $('gpx')).focus();
 }
 
 $('descargarGpx').addEventListener('click', () => {
@@ -504,17 +599,38 @@ function desnivel(puntos) {
 function dibujarPerfil() {
   const pts = ruta.puntos.filter((p) => p.ele != null && Number.isFinite(p.ele));
   const svg = $('perfil');
+  const total = ruta.puntos.at(-1).km || 1;
+  $('perfilKm').textContent = fKm(total);
   if (pts.length < 2) {
     svg.setAttribute('aria-label', 'Perfil de altimetría no disponible: el track no tiene datos de altitud.');
+    $('perfilMax').textContent = $('perfilMin').textContent = '';
     return (svg.innerHTML = '');
   }
-  const total = ruta.puntos.at(-1).km || 1;
   const min = Math.min(...pts.map((p) => p.ele));
   const max = Math.max(...pts.map((p) => p.ele));
-  const y = (e) => 76 - ((e - min) / (max - min || 1)) * 70;
+  // Margen arriba y abajo para que las cotas no pisen la línea
+  const y = (e) => 74 - ((e - min) / (max - min || 1)) * 54;
   const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${((p.km / total) * 300).toFixed(1)},${y(p.ele).toFixed(1)}`).join('');
-  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/>`;
-  svg.setAttribute('aria-label', `Perfil de altimetría: entre ${Math.round(min)} y ${Math.round(max)} metros, empieza a ${Math.round(pts[0].ele)} m y termina a ${Math.round(pts.at(-1).ele)} m.`);
+  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g>`;
+  $('perfilMax').textContent = fM(max);
+  $('perfilMin').textContent = fM(min);
+  svg.setAttribute('aria-label', `Perfil de altimetría: entre ${fM(min)} y ${fM(max)}, empieza a ${fM(pts[0].ele)} y termina a ${fM(pts.at(-1).ele)}.`);
+}
+
+// Líneas discontinuas en el perfil donde quedan los refugios conectados
+function marcarRefugiosEnPerfil() {
+  const g = document.getElementById('perfilMarcas');
+  if (!g) return;
+  const total = ruta.puntos.at(-1).km || 1;
+  g.innerHTML = conectadosActuales
+    .map((c) => { const x = ((c.km / total) * 300).toFixed(1); return `<line class="marca-refugio" x1="${x}" x2="${x}" y1="0" y2="80"/>`; })
+    .join('');
+}
+
+function textoDesvio(dist) {
+  if (dist < 0.1) return 'a pie de ruta';
+  if (dist < 1) return `a ${nf0.format(Math.round(dist * 100) * 10)} m del trazado`;
+  return `a ${fKm(dist)} del trazado`;
 }
 
 function mostrarConectados(anunciarCambio = false) {
@@ -528,16 +644,16 @@ function mostrarConectados(anunciarCambio = false) {
   const ol = $('conectados');
   ol.innerHTML = conectadosActuales.length
     ? ''
-    : `<li class="vacio">Ningún refugio a menos de ${radio} km. Prueba a ampliar la distancia.</li>`;
+    : `<li class="vacio">Ningún refugio a menos de ${$('radioValor').textContent} km. Prueba a ampliar la distancia.</li>`;
   for (const c of conectadosActuales) {
-    const lejos = c.dist < 0.1 ? 'a pie de ruta' : `a ${(c.dist * 1000).toFixed(0)} m`;
-    ol.append(botonRefugio(c.f, `${esc(c.f.properties.nombre)}<small>km ${c.km.toFixed(1)} de la ruta · ${lejos} · ${TIPO_TEXTO[c.f.properties.tipo]}</small>`));
+    ol.append(botonRefugio(c.f, `${esc(c.f.properties.nombre)}<small>En el km ${nf1.format(c.km)} · ${textoDesvio(c.dist)} · ${TIPO_TEXTO[c.f.properties.tipo]}</small>`, true));
   }
+  marcarRefugiosEnPerfil();
   actualizarAsa();
   if (anunciarCambio) {
     clearTimeout(mostrarConectados.t);
     const n = conectadosActuales.length;
-    mostrarConectados.t = setTimeout(() => anunciar(`${n} refugio${n === 1 ? '' : 's'} a menos de ${radio} km.`), 400);
+    mostrarConectados.t = setTimeout(() => anunciar(`${plural(n, 'refugio')} a menos de ${$('radioValor').textContent} km.`), 400);
   }
 }
 
