@@ -183,7 +183,7 @@ async function iniciarMapa() {
 
   map.addSource('ruta', { type: 'geojson', data: vacio() });
   map.addLayer({ id: 'ruta-borde', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
-  map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': COLORES.ruta, 'line-width': 5 } });
+  map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['coalesce', ['get', 'c'], COLORES.ruta], 'line-width': 5 } });
 
   const r = await fetch('data/refugios.geojson');
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -238,7 +238,11 @@ async function cargarEtapas() {
     etapas = datos.features.map((f) => {
       const p = f.properties;
       const puntos = conKm(f.geometry.coordinates.map(([lon, lat, ele]) => ({ lon, lat, ele: ele ?? null })));
-      return { n: p.etapa, nombre: p.nombre, puntos, dist: puntos.at(-1).km, sube: desnivel(puntos).sube, firme: { asfalto: p.asfalto, pista: p.pista, sendero: p.sendero } };
+      const dist = puntos.at(-1).km;
+      // Los tramos vienen en metros de BRouter; se reescalan a los km calculados aquí para que encajen con los puntos
+      const metros = p.tramos?.at(-1)?.[0] || 1;
+      const tramos = (p.tramos || []).map(([m, t]) => ({ hasta: (m / metros) * dist, tipo: { a: 'asfalto', p: 'pista', s: 'sendero' }[t] }));
+      return { n: p.etapa, nombre: p.nombre, puntos, dist, sube: desnivel(puntos).sube, firme: { asfalto: p.asfalto, pista: p.pista, sendero: p.sendero }, tramos };
     });
     pintarEtapas();
     actualizarVistaRutas();
@@ -326,7 +330,7 @@ function seleccionarEtapa(e, { foco = true } = {}) {
   mostrarError('');
   if (e) {
     etapaActiva = e.n;
-    ruta = { nombre: `Etapa ${e.n}: ${e.nombre}`, puntos: e.puntos.map((p) => ({ ...p })), firme: e.firme };
+    ruta = { nombre: `Etapa ${e.n}: ${e.nombre}`, puntos: e.puntos.map((p) => ({ ...p })), firme: e.firme, tramos: e.tramos };
   } else {
     etapaActiva = 0;
     const puntos = conKm(etapas.flatMap((x) => x.puntos.map((p) => ({ ...p }))));
@@ -334,7 +338,14 @@ function seleccionarEtapa(e, { foco = true } = {}) {
     for (const k of ['asfalto', 'pista', 'sendero']) {
       firme[k] = Math.round(etapas.reduce((s, x) => s + x.firme[k] * x.dist, 0) / puntos.at(-1).km);
     }
-    ruta = { nombre: 'Travesía completa de Mallorca', puntos, firme };
+    // Tramos de todas las etapas seguidas, desplazados por los km acumulados
+    let base = 0;
+    const tramos = etapas.flatMap((x) => {
+      const t = x.tramos.map((tr) => ({ hasta: base + tr.hasta, tipo: tr.tipo }));
+      base += x.dist;
+      return t;
+    });
+    ruta = { nombre: 'Travesía completa de Mallorca', puntos, firme, tramos };
   }
   marcarEtapa();
   if (movil.matches) abrirPanel(false);
@@ -494,6 +505,9 @@ function escribirHash() {
   if ($('radio').value !== '2') p.set('radio', $('radio').value);
   if (capaBase === 'bici') p.set('mapa', 'bici');
   if (capaMtb) p.set('mtb', '1');
+  if (colorRuta !== 'ninguno') p.set('color', colorRuta);
+  if ($('diaKm').value !== '60') p.set('dkm', $('diaKm').value);
+  if ($('diaSube').value !== '1500') p.set('dsube', $('diaSube').value);
   const s = p.toString();
   history.replaceState(null, '', s ? `#${s}` : location.pathname + location.search);
 }
@@ -509,6 +523,8 @@ function aplicarHash(p) {
   capaBase = p.get('mapa') === 'bici' ? 'bici' : 'topo';
   capaMtb = p.get('mtb') === '1';
   aplicarCapas();
+  ponerColorRuta(['pendiente', 'firme'].includes(p.get('color')) ? p.get('color') : 'ninguno');
+  ponerLimitesDia(p.get('dkm'), p.get('dsube'));
   const etapa = p.get('etapa');
   etapaPendiente = etapa === 'completa' ? 0 : Number(etapa) || null;
   if (etapa == null && etapaActiva != null) quitarRuta({ foco: false });
@@ -710,8 +726,9 @@ function encuadrarRuta() {
 }
 
 function dibujarRuta() {
-  const coords = ruta.puntos.map((p) => [p.lon, p.lat]);
-  map.getSource('ruta').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} });
+  ruta.subeAcum = subidaAcumulada(ruta.puntos);
+  $('opcionFirme').hidden = !ruta.tramos?.length;
+  pintarTrazado();
   encuadrarRuta();
 
   const { sube, baja, max } = desnivel(ruta.puntos);
@@ -746,6 +763,7 @@ function quitarRuta({ encuadrar = true, foco = true } = {}) {
   map.getSource('ruta')?.setData(vacio());
   if (map.getLayer('refugios-conectados')) map.setFilter('refugios-conectados', ['in', ['get', 'id'], ['literal', []]]);
   $('ruta').hidden = true;
+  quitarMarcasNoche();
   ocultarCursor();
   actualizarAsa();
   escribirHash();
@@ -804,7 +822,7 @@ function dibujarPerfil() {
   // Margen arriba y abajo para que las cotas no pisen la línea
   const y = (e) => 74 - ((e - min) / (max - min || 1)) * 54;
   const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${((p.km / total) * 300).toFixed(1)},${y(p.ele).toFixed(1)}`).join('');
-  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g><line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>`;
+  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g><g id="perfilDias"></g><line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>`;
   $('perfilMax').textContent = fM(max);
   $('perfilMin').textContent = fM(min);
   $('perfilDesc').textContent = `Perfil de altimetría: entre ${fM(min)} y ${fM(max)}, empieza a ${fM(pts[0].ele)} y termina a ${fM(pts.at(-1).ele)}. Usa las flechas para recorrerlo.`;
@@ -901,6 +919,203 @@ function marcarRefugiosEnPerfil() {
     .join('');
 }
 
+// ---------- Trazado coloreado por pendiente o por firme ----------
+let colorRuta = 'ninguno';
+const CLASES_PENDIENTE = [
+  [3, '#3f9b5a', '0–3 %'], [6, '#c9a400', '3–6 %'], [9, '#e07b00', '6–9 %'], [12, '#d0202a', '9–12 %'], [Infinity, '#5e0d33', 'más del 12 %'],
+];
+// Colores fijos: el mapa base es claro también en modo oscuro
+const COLOR_FIRME = { asfalto: '#5f5b52', pista: '#b9793a', sendero: '#2f6b2a' };
+
+const linea = (pts, c) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates: pts.map((p) => [p.lon, p.lat]) }, properties: c ? { c } : {} });
+
+function segmentosRuta() {
+  const pts = ruta.puntos;
+  if (colorRuta === 'pendiente') {
+    // Tramos de unos 200 m: suficiente detalle sin que el ruido del GPS pinte cada metro
+    const out = [];
+    let i0 = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i].km - pts[i0].km < 0.2 && i < pts.length - 1) continue;
+      const a = pts[i0], b = pts[i];
+      const pend = a.ele != null && b.ele != null ? Math.abs((b.ele - a.ele) / ((b.km - a.km || 1e-6) * 1000)) * 100 : null;
+      out.push(linea(pts.slice(i0, i + 1), pend == null ? null : CLASES_PENDIENTE.find(([max]) => pend < max)[1]));
+      i0 = i;
+    }
+    return out;
+  }
+  if (colorRuta === 'firme' && ruta.tramos?.length) {
+    let desde = 0;
+    return ruta.tramos.map((t) => {
+      const i = indiceEnKm(desde), j = indiceEnKm(t.hasta);
+      const tramo = j > i ? pts.slice(i, j + 1) : [puntoEnKm(desde), puntoEnKm(t.hasta)];
+      desde = t.hasta;
+      return linea(tramo, COLOR_FIRME[t.tipo]);
+    });
+  }
+  return [linea(pts)];
+}
+
+function pintarTrazado() {
+  if (!ruta) return;
+  if (colorRuta === 'firme' && !ruta.tramos?.length) ponerColorRuta('ninguno', false);
+  map.getSource('ruta')?.setData({ type: 'FeatureCollection', features: segmentosRuta() });
+  const ley = $('leyendaTrazado');
+  const filas = colorRuta === 'pendiente'
+    ? CLASES_PENDIENTE.map(([, c, t]) => [c, t])
+    : colorRuta === 'firme' ? TIPOS_FIRME.map((k) => [COLOR_FIRME[k], k]) : [];
+  ley.hidden = !filas.length;
+  ley.innerHTML = filas.map(([, t]) => `<li><i class="muestra"></i>${t}</li>`).join('') + (colorRuta === 'pendiente' ? '<li class="nota">sube o baja</li>' : '');
+  ley.querySelectorAll('.muestra').forEach((m, k) => (m.style.background = filas[k][0]));
+}
+
+function ponerColorRuta(valor, redibujar = true) {
+  colorRuta = valor;
+  document.querySelectorAll('[name="colorRuta"]').forEach((r) => (r.checked = r.value === valor));
+  if (redibujar) pintarTrazado();
+}
+document.querySelectorAll('[name="colorRuta"]').forEach((r) =>
+  r.addEventListener('change', () => {
+    ponerColorRuta(r.value);
+    escribirHash();
+  })
+);
+
+// ---------- Plan por días: dónde dormir entre los refugios conectados ----------
+let marcasNoche = [];
+
+// Subida acumulada en cada punto, con la misma histéresis de 3 m que el desnivel total
+function subidaAcumulada(puntos) {
+  let acum = 0, ref = null;
+  return puntos.map((p) => {
+    if (p.ele != null && Number.isFinite(p.ele)) {
+      if (ref == null) ref = p.ele;
+      else if (p.ele - ref >= 3) { acum += p.ele - ref; ref = p.ele; }
+      else if (ref - p.ele >= 3) ref = p.ele;
+    }
+    return acum;
+  });
+}
+
+function indiceEnKm(km) {
+  const pts = ruta.puntos;
+  let lo = 0, hi = pts.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (pts[mid].km < km) lo = mid; else hi = mid;
+  }
+  return pts[lo].km >= km ? lo : hi;
+}
+const subidaEntre = (a, b) => ruta.subeAcum[indiceEnKm(b)] - ruta.subeAcum[indiceEnKm(a)];
+
+// Hasta dónde se llega desde «inicio» sin pasar de los km ni de la subida del día
+function kmAlcanzable(inicio, maxKm, maxSube) {
+  const pts = ruta.puntos;
+  const base = ruta.subeAcum[indiceEnKm(inicio)];
+  let fin = inicio;
+  for (let i = indiceEnKm(inicio); i < pts.length; i++) {
+    if (pts[i].km > inicio + maxKm || ruta.subeAcum[i] - base > maxSube) break;
+    fin = pts[i].km;
+  }
+  return fin;
+}
+
+function planificarDias() {
+  if (!ruta) return;
+  const total = ruta.puntos.at(-1).km;
+  const maxKm = +$('diaKm').value, maxSube = +$('diaSube').value;
+  const dias = [];
+  let inicio = 0;
+  while (inicio < total - 0.05 && dias.length < 30) {
+    let lim = kmAlcanzable(inicio, maxKm, maxSube);
+    if (lim >= total - 0.05) { dias.push({ desde: inicio, hasta: total }); break; }
+    // El refugio más lejano al que se llega ese día (al menos a 1 km del punto de salida)
+    const refugio = conectadosActuales.filter((c) => c.km > inicio + 1 && c.km <= lim).at(-1);
+    if (refugio) {
+      dias.push({ desde: inicio, hasta: refugio.km, refugio });
+      inicio = refugio.km;
+    } else {
+      if (lim < inicio + 1) lim = Math.min(total, inicio + 1); // una subida muy dura no puede dejarnos parados
+      dias.push({ desde: inicio, hasta: lim, sinRefugio: true });
+      inicio = lim;
+    }
+  }
+  pintarPlan(dias);
+}
+
+function pintarPlan(dias) {
+  const ol = $('planDias');
+  ol.innerHTML = '';
+  dias.forEach((d, k) => {
+    const sube = subidaEntre(d.desde, d.hasta);
+    const ultimo = k === dias.length - 1;
+    const fin = ultimo
+      ? 'Llegada al final de la ruta'
+      : d.refugio
+        ? `Noche en ${esc(d.refugio.f.properties.nombre)} · ${textoDesvio(d.refugio.dist)}`
+        : `Sin refugio en este tramo: busca dónde dormir cerca del km ${nf0.format(d.hasta)}`;
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = d.sinRefugio && !ultimo ? 'sin-refugio' : '';
+    b.innerHTML = `<span><b>Día ${k + 1}</b> · ${fKm(d.hasta - d.desde)} · +${fM(sube)}<small>${fin}</small></span>`;
+    b.addEventListener('click', () => encuadrarTramo(d.desde, d.hasta));
+    li.append(b);
+    ol.append(li);
+  });
+
+  // Fin de cada día en el perfil y refugios de noche numerados en el mapa
+  const total = ruta.puntos.at(-1).km || 1;
+  quitarMarcasNoche();
+  const g = document.getElementById('perfilDias');
+  if (g) g.innerHTML = dias.slice(0, -1).map((d) => { const x = ((d.hasta / total) * 300).toFixed(1); return `<line class="fin-dia" x1="${x}" x2="${x}" y1="0" y2="80"/>`; }).join('');
+  dias.slice(0, -1).forEach((d, k) => {
+    const el = document.createElement('div');
+    el.className = `marca-noche${d.sinRefugio ? ' sin-refugio' : ''}`;
+    el.innerHTML = `<i><b>${k + 1}</b></i>`;
+    el.title = d.refugio ? `Noche ${k + 1}: ${d.refugio.f.properties.nombre}` : `Fin del día ${k + 1}`;
+    const pos = d.refugio ? d.refugio.f.geometry.coordinates : (({ lon, lat }) => [lon, lat])(puntoEnKm(d.hasta));
+    marcasNoche.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(pos).addTo(map));
+  });
+}
+
+function quitarMarcasNoche() {
+  marcasNoche.forEach((m) => m.remove());
+  marcasNoche = [];
+  const g = document.getElementById('perfilDias');
+  if (g) g.innerHTML = '';
+}
+
+function encuadrarTramo(desde, hasta) {
+  const pts = ruta.puntos.slice(indiceEnKm(desde), indiceEnKm(hasta) + 1);
+  if (pts.length < 2) return;
+  if (movil.matches) abrirPanel(false);
+  map.fitBounds(pts.reduce((b, p) => b.extend([p.lon, p.lat]), new maplibregl.LngLatBounds([pts[0].lon, pts[0].lat], [pts[0].lon, pts[0].lat])), { padding: margen(50) });
+}
+
+function ponerLimitesDia(km, sube) {
+  const n = (v, min, max, def) => (Number(v) >= min && Number(v) <= max ? String(Number(v)) : def);
+  $('diaKm').value = n(km, 20, 150, '60');
+  $('diaSube').value = n(sube, 300, 3000, '1500');
+  actualizarLimitesDia();
+}
+function actualizarLimitesDia() {
+  $('diaKmValor').textContent = $('diaKm').value;
+  $('diaSubeValor').textContent = nf0.format(+$('diaSube').value);
+  $('diaKm').setAttribute('aria-valuetext', `${$('diaKm').value} kilómetros al día`);
+  $('diaSube').setAttribute('aria-valuetext', `${$('diaSube').value} metros de subida al día`);
+}
+for (const id of ['diaKm', 'diaSube']) {
+  $(id).addEventListener('input', () => {
+    actualizarLimitesDia();
+    if (!ruta) return;
+    planificarDias();
+    clearTimeout(planificarDias.t);
+    planificarDias.t = setTimeout(() => anunciar(`Plan de ${plural($('planDias').children.length, 'día')}.`), 500);
+  });
+  $(id).addEventListener('change', escribirHash);
+}
+
 function textoDesvio(dist) {
   if (dist < 0.1) return 'a pie de ruta';
   if (dist < 1) return `a ${nf0.format(Math.round(dist * 100) * 10)} m del trazado`;
@@ -923,6 +1138,7 @@ function mostrarConectados(anunciarCambio = false) {
     ol.append(botonRefugio(c.f, `${esc(c.f.properties.nombre)}<small>En el km ${nf1.format(c.km)} · ${textoDesvio(c.dist)} · ${TIPO_TEXTO[c.f.properties.tipo]}</small>`, true));
   }
   marcarRefugiosEnPerfil();
+  planificarDias();
   actualizarAsa();
   if (anunciarCambio) {
     clearTimeout(mostrarConectados.t);
@@ -971,3 +1187,34 @@ function urlSegura(valor) {
 
 // Estado inicial desde la URL (enlace compartido)
 if (location.hash.length > 1) aplicarHash(hashInicial);
+
+// ---------- App instalable y uso sin conexión ----------
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch((err) => console.warn('No se ha podido activar el modo sin conexión', err));
+}
+
+function actualizarConexion() {
+  $('sinConexion').hidden = navigator.onLine;
+}
+window.addEventListener('online', actualizarConexion);
+window.addEventListener('offline', () => {
+  actualizarConexion();
+  anunciar('Sin conexión. El mapa solo muestra las zonas que ya has visto.');
+});
+actualizarConexion();
+
+// El navegador avisa cuando la app se puede instalar; hasta entonces el bloque queda oculto
+let avisoInstalar = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  avisoInstalar = e;
+  $('instalar').hidden = false;
+});
+$('botonInstalar').addEventListener('click', async () => {
+  if (!avisoInstalar) return;
+  avisoInstalar.prompt();
+  await avisoInstalar.userChoice;
+  avisoInstalar = null;
+  $('instalar').hidden = true;
+});
+window.addEventListener('appinstalled', () => ($('instalar').hidden = true));

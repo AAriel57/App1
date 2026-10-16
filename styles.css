@@ -191,6 +191,40 @@ h1, h2, h3 { font-family: var(--fuente-titulo); font-weight: 700; letter-spacing
 .ruta-acciones .primario { flex-basis: 100%; }
 .ruta-acciones [hidden] { display: none; }
 
+/* Color del trazado: control segmentado y leyenda */
+.colorear { border: 0; margin: 14px 0 0; padding: 0; }
+.colorear legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.segmentado { display: flex; gap: 4px; padding: 4px; background: var(--superficie); border-radius: 12px; }
+.segmentado label {
+  flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 4px 8px;
+  border-radius: 9px; color: var(--muted); font-weight: 600; cursor: pointer;
+}
+.segmentado label[hidden] { display: none; }
+.segmentado input { position: absolute; opacity: 0; pointer-events: none; }
+.segmentado label:has(input:checked) { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px #0002; }
+.segmentado label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 1px; }
+.leyenda-trazado { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.leyenda-trazado li { display: flex; align-items: center; gap: 6px; }
+.leyenda-trazado .muestra { width: 18px; height: 6px; border-radius: 3px; }
+.leyenda-trazado .nota { font-style: italic; }
+
+/* Plan por días */
+.ruta input[type="range"] { width: 100%; height: var(--toque); margin: 0; accent-color: var(--accent); cursor: pointer; }
+.plan-dias { margin-top: 6px; }
+.plan-dias button::before { content: none !important; } /* «Día 1» ya numera: sin el contador de la lista */
+.plan-dias b { font-family: var(--fuente-titulo); font-size: 17px; }
+.plan-dias button.sin-refugio small { color: var(--error); }
+.perfil line.fin-dia { stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+/* Chincheta de noche: MapLibre mueve el contenedor con transform, así que el giro va en un hijo */
+.marca-noche { padding-bottom: 4px; cursor: default; }
+.marca-noche i {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--accent); color: var(--on-accent); border: 2px solid #fff; box-shadow: 0 2px 6px #0004;
+  font: normal 700 14px/1 var(--fuente-titulo);
+}
+.marca-noche b { transform: rotate(45deg); }
+.marca-noche.sin-refugio i { background: var(--error); color: var(--panel); }
+
 /* Cursor del perfil enlazado con el mapa */
 .perfil-caja { cursor: crosshair; touch-action: pan-y; border-radius: 10px; }
 .perfil-caja:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -339,3 +373,14 @@ ol.lista-botones button::before {
   .panel.abierto { height: 75%; }
   .lista-botones small, .nota, .dropzone span { font-size: 14px; }
 }
+
+/* ---------- Sin conexión ---------- */
+.sin-conexion {
+  position: absolute; z-index: 4; top: 10px; left: 50%; transform: translateX(-50%); margin: 0;
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 120px); padding: 8px 14px; border-radius: 999px;
+  background: var(--tinta); color: #fbf9f4; font-size: 14px; font-weight: 600; box-shadow: 0 2px 10px #0004;
+}
+.sin-conexion[hidden] { display: none; }
+.sin-conexion svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+@media (min-width: 761px) { .sin-conexion { left: calc(360px + (100% - 360px) / 2); } }
+.instalar .boton { width: 100%; }

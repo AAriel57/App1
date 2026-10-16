@@ -9,6 +9,7 @@ $types = @{
   '.html' = 'text/html; charset=utf-8'; '.js' = 'text/javascript; charset=utf-8'; '.mjs' = 'text/javascript; charset=utf-8'
   '.css' = 'text/css; charset=utf-8'; '.geojson' = 'application/geo+json'
   '.gpx' = 'application/gpx+xml'; '.svg' = 'image/svg+xml'; '.png' = 'image/png'; '.ico' = 'image/x-icon'
+  '.webmanifest' = 'application/manifest+json'
 }
 
 $listener = [Net.HttpListener]::new()

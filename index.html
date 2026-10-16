@@ -11,6 +11,9 @@
        Teselas: OpenTopoMap, CyclOSM y Waymarked Trails. El worker de MapLibre es del mismo origen. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.opentopomap.org https://*.tile-cyclosm.openstreetmap.fr https://tile.waymarkedtrails.org; connect-src 'self' https://*.tile.opentopomap.org https://*.tile-cyclosm.openstreetmap.fr https://tile.waymarkedtrails.org; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
@@ -75,6 +78,15 @@
           </div>
           <p class="visualmente-oculto" id="perfilDesc"></p>
           <div class="firme" id="firme" hidden></div>
+          <fieldset class="colorear">
+            <legend>Color del trazado</legend>
+            <div class="segmentado">
+              <label><input type="radio" name="colorRuta" value="ninguno" checked> Simple</label>
+              <label><input type="radio" name="colorRuta" value="pendiente"> Pendiente</label>
+              <label id="opcionFirme"><input type="radio" name="colorRuta" value="firme"> Firme</label>
+            </div>
+            <ul class="leyenda-trazado" id="leyendaTrazado" hidden></ul>
+          </fieldset>
           <div class="ruta-acciones">
             <button type="button" class="boton primario" id="descargarGpx">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
@@ -95,6 +107,14 @@
           </label>
           <input type="range" id="radio" autocomplete="off"min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
           <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
+
+          <h3 id="tPlan">Plan por días</h3>
+          <p class="nota">Reparte la ruta en jornadas y busca dónde dormir entre los refugios conectados.</p>
+          <label class="radio" for="diaKm">Hasta <output id="diaKmValor" for="diaKm">60</output> km al día</label>
+          <input type="range" id="diaKm" min="20" max="150" step="5" value="60" autocomplete="off" aria-valuetext="60 kilómetros al día">
+          <label class="radio" for="diaSube">Hasta <output id="diaSubeValor" for="diaSube">1500</output> m de subida al día</label>
+          <input type="range" id="diaSube" min="300" max="3000" step="100" value="1500" autocomplete="off" aria-valuetext="1500 metros de subida al día">
+          <ol id="planDias" class="plan-dias lista-botones" aria-labelledby="tPlan"></ol>
         </section>
 
         <section class="rutas" id="vistaRutas" role="tabpanel" aria-labelledby="tabRutas">
@@ -133,10 +153,23 @@
             <ul id="listaRefugios" class="lista-botones"></ul>
           </details>
         </section>
+
+        <section class="instalar" id="instalar" hidden aria-labelledby="tInstalar">
+          <h2 id="tInstalar">Llévatela a la montaña</h2>
+          <p class="nota">Instala la app: abre sin conexión con los refugios, las etapas y las zonas del mapa que ya hayas visto.</p>
+          <button type="button" class="boton" id="botonInstalar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
+            Instalar la app
+          </button>
+        </section>
       </div>
     </aside>
 
     <div id="map" class="map" role="region" aria-label="Mapa de refugios y rutas"></div>
+    <p class="sin-conexion" id="sinConexion" role="status" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.6 5.2A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 3.5-2M12.8 9.9a10 10 0 0 1 6.2 2.6M8.5 16a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>
+      Sin conexión: el mapa solo muestra las zonas que ya has visto
+    </p>
   </main>
 
   <p id="aviso" class="visualmente-oculto" aria-live="polite"></p>

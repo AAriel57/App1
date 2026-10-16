@@ -48,8 +48,20 @@ foreach ($e in $etapas) {
   $m = $f.properties.messages
   $iD = [array]::IndexOf($m[0], 'Distance'); $iT = [array]::IndexOf($m[0], 'WayTags')
   $firme = @{ asfalto = 0; pista = 0; sendero = 0 }
-  $m | select -Skip 1 | % { $firme[(Tipo-Firme $_[$iT])] += [int]$_[$iD] }
+  # Tramos para pintar el firme sobre el trazado: [metros acumulados al final del tramo, a|p|s],
+  # fusionando los tramos seguidos del mismo tipo
+  $tramos = [Collections.Generic.List[object]]::new()
+  $acum = 0
+  $m | select -Skip 1 | % {
+    $tipo = Tipo-Firme $_[$iT]
+    $firme[$tipo] += [int]$_[$iD]
+    $acum += [int]$_[$iD]
+    $letra = $tipo.Substring(0, 1)
+    if ($tramos.Count -and $tramos[$tramos.Count - 1][1] -eq $letra) { $tramos[$tramos.Count - 1][0] = $acum }
+    else { $tramos.Add(@($acum, $letra)) }
+  }
   $total = [math]::Max(1, ($firme.Values | measure -Sum).Sum)
+  $tramosJson = ($tramos | % { "[$($_[0]),`"$($_[1])`"]" }) -join ','
 
   $coords = ($f.geometry.coordinates | % { "[$(Num $_[0] 5),$(Num $_[1] 5),$(Num $_[2] 0)]" }) -join ','
   $props = @(
@@ -58,7 +70,8 @@ foreach ($e in $etapas) {
     "`"nombre`":$(Json "$($a.properties.nombre) → $($b.properties.nombre)")",
     "`"asfalto`":$([math]::Round(100 * $firme.asfalto / $total))",
     "`"pista`":$([math]::Round(100 * $firme.pista / $total))",
-    "`"sendero`":$([math]::Round(100 * $firme.sendero / $total))"
+    "`"sendero`":$([math]::Round(100 * $firme.sendero / $total))",
+    "`"tramos`":[$tramosJson]"
   ) -join ','
   $features += "{`"type`":`"Feature`",`"properties`":{$props},`"geometry`":{`"type`":`"LineString`",`"coordinates`":[$coords]}}"
   Start-Sleep -Seconds 2 # no saturar el servidor público de BRouter
