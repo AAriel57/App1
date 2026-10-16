@@ -1,3 +1,7 @@
+// MapLibre servido desde el propio sitio (vendor/), sin depender de un CDN: copia verificada contra la
+// integridad del paquete de npm. Para actualizarlo, sustituir la carpeta y cambiar la versión aquí y en index.html.
+import * as maplibregl from './vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
+
 const ISLAS = {
   todas: [[1.1, 38.6], [4.4, 40.15]],
   Mallorca: [[2.3, 39.25], [3.48, 39.97]],
@@ -33,7 +37,9 @@ let pestana = 'rutas';
 const hashInicial = new URLSearchParams(location.hash.slice(1));
 let capaBase = hashInicial.get('mapa') === 'bici' ? 'bici' : 'topo';
 let capaMtb = hashInicial.get('mtb') === '1';
-const islaInicial = ISLAS[hashInicial.get('isla')] && hashInicial.get('isla') !== 'todas' ? hashInicial.get('isla') : 'Mallorca';
+// Object.hasOwn y no ISLAS[x]: «constructor» o «toString» también existen en cualquier objeto
+const esIsla = (x) => typeof x === 'string' && Object.hasOwn(ISLAS, x);
+const islaInicial = esIsla(hashInicial.get('isla')) && hashInicial.get('isla') !== 'todas' ? hashInicial.get('isla') : 'Mallorca';
 
 const OSM = 'Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const visible = (si) => ({ visibility: si ? 'visible' : 'none' });
@@ -262,6 +268,7 @@ function pintarEtapas() {
     b.type = 'button';
     b.dataset.etapa = e.n;
     b.innerHTML = `<span>${esc(e.nombre)}<small>${fKm(e.dist)} · +${fM(e.sube ?? 0)}</small>${barraFirme(e.firme)}<span class="visualmente-oculto">. Firme: ${textoFirme(e.firme)}</span></span>`;
+    aplicarAnchosFirme(b);
     b.addEventListener('click', () => seleccionarEtapa(e));
     li.append(b);
     ol.append(li);
@@ -297,14 +304,20 @@ const textoFirme = (f) => {
 
 const barraFirme = (f) => {
   const r = firme100(f);
-  return `<span class="barra-firme" aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<i class="${k}" style="flex: ${r[k]}"></i>`).join('')}</span>`;
+  return `<span class="barra-firme" aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<i class="${k}" data-p="${r[k]}"></i>`).join('')}</span>`;
 };
+
+// Los anchos se aplican con el CSSOM y no con style="…": la CSP no permite estilos en línea
+function aplicarAnchosFirme(contenedor) {
+  contenedor.querySelectorAll('.barra-firme [data-p]').forEach((i) => (i.style.flexGrow = i.dataset.p));
+}
 
 function pintarFirme(f) {
   const r = firme100(f);
   $('firme').innerHTML =
     `<span class="visualmente-oculto">Firme: ${textoFirme(f)}</span>${barraFirme(f)}` +
     `<ul aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<li><i class="muestra ${k}"></i><b>${r[k]} %</b> ${k}</li>`).join('')}</ul>`;
+  aplicarAnchosFirme($('firme'));
 }
 
 // e = null selecciona la travesía completa
@@ -487,7 +500,7 @@ function escribirHash() {
 
 function aplicarHash(p) {
   aplicandoHash = true;
-  const isla = ISLAS[p.get('isla')] ? p.get('isla') : 'todas';
+  const isla = esIsla(p.get('isla')) ? p.get('isla') : 'todas';
   if (isla !== islaActiva) elegirIsla(isla, { encuadrar: !p.has('etapa'), avisar: false });
   const vista = p.get('vista') === 'subir' ? 'subir' : 'rutas';
   if (vista !== pestana) cambiarPestana(vista);
@@ -572,7 +585,7 @@ function abrirPopup(f, origen) {
     p.capacidad && `<p>Plazas: ${esc(p.capacidad)}</p>`,
     p.operador && `<p>Gestión: ${esc(p.operador)}</p>`,
     p.telefono && `<p>Tel.: <a href="tel:${esc(p.telefono)}">${esc(p.telefono)}</a></p>`,
-    p.web && `<p><a href="${esc(p.web)}" target="_blank" rel="noopener">Web<span class="visualmente-oculto"> de ${esc(p.nombre)} (se abre en otra pestaña)</span></a></p>`,
+    urlSegura(p.web) && `<p><a href="${esc(urlSegura(p.web))}" target="_blank" rel="noopener noreferrer">Web<span class="visualmente-oculto"> de ${esc(p.nombre)} (se abre en otra pestaña)</span></a></p>`,
   ];
   if (popup) { popup.off('close', alCerrar); popup.remove(); }
   popup = new maplibregl.Popup({ offset: 12, maxWidth: '280px', focusAfterOpen: true })
@@ -592,7 +605,7 @@ document.addEventListener('keydown', (e) => {
 const dz = $('dropzone');
 $('gpx').addEventListener('change', (e) => {
   const f = e.target.files[0];
-  if (f) f.text().then((t) => leerGpx(t, f.name));
+  if (f) abrirArchivoGpx(f);
   e.target.value = ''; // permite volver a subir el mismo archivo
 });
 dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('sobre'); });
@@ -601,8 +614,18 @@ dz.addEventListener('drop', (e) => {
   e.preventDefault();
   dz.classList.remove('sobre');
   const f = e.dataTransfer.files[0];
-  if (f) f.text().then((t) => leerGpx(t, f.name));
+  if (f) abrirArchivoGpx(f);
 });
+
+// Límites para que un archivo enorme no congele la pestaña (un GPX de varios días ronda los 5-10 MB)
+const GPX_MAX_MB = 25;
+const GPX_MAX_PUNTOS = 300000;
+function abrirArchivoGpx(f) {
+  if (f.size > GPX_MAX_MB * 1024 * 1024) {
+    return mostrarError(`«${f.name}» ocupa ${nf1.format(f.size / 1024 / 1024)} MB y el máximo es ${GPX_MAX_MB} MB. Simplifica el track en tu aplicación antes de exportarlo.`);
+  }
+  f.text().then((t) => leerGpx(t, f.name), () => mostrarError(`No se ha podido leer «${f.name}».`));
+}
 $('ejemplo').addEventListener('click', async () => {
   try {
     const r = await fetch('data/ejemplo-prueba.gpx');
@@ -654,8 +677,12 @@ async function leerGpx(texto, nombreArchivo) {
   if (xml.querySelector('parsererror')) {
     return mostrarError(`«${nombreArchivo}» no es un archivo GPX válido. Expórtalo de nuevo desde tu aplicación (formato .gpx).`);
   }
+  const nodos = xml.querySelectorAll('trkpt, rtept');
+  if (nodos.length > GPX_MAX_PUNTOS) {
+    return mostrarError(`«${nombreArchivo}» tiene ${nf0.format(nodos.length)} puntos y el máximo es ${nf0.format(GPX_MAX_PUNTOS)}. Simplifica el track antes de subirlo.`);
+  }
   // parseFloat y no +: un atributo ausente (null) daría 0, una coordenada válida
-  const puntos = [...xml.querySelectorAll('trkpt, rtept')].map((n) => ({
+  const puntos = [...nodos].map((n) => ({
     lat: parseFloat(n.getAttribute('lat')),
     lon: parseFloat(n.getAttribute('lon')),
     ele: n.querySelector('ele') ? +n.querySelector('ele').textContent : null,
@@ -930,6 +957,17 @@ function cercania([lon, lat], puntos) {
 
 const vacio = () => ({ type: 'FeatureCollection', features: [] });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// Solo enlaces http(s): los datos vienen de OpenStreetMap, que edita cualquiera, y esc() no frena «javascript:»
+function urlSegura(valor) {
+  if (!valor) return null;
+  try {
+    const u = new URL(String(valor).trim());
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 // Estado inicial desde la URL (enlace compartido)
 if (location.hash.length > 1) aplicarHash(hashInicial);

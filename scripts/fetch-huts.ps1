@@ -24,6 +24,14 @@ if (-not $raw.TrimStart().StartsWith('{')) {
 }
 $osm = $raw | ConvertFrom-Json
 
+# Solo se guardan webs http(s): OpenStreetMap lo edita cualquiera y un «javascript:» acabaría en un enlace
+function Get-WebSegura($valor) {
+  if (-not $valor) { return $null }
+  $u = $null
+  if ([Uri]::TryCreate($valor.Trim(), [UriKind]::Absolute, [ref]$u) -and $u.Scheme -in 'http', 'https') { return $u.AbsoluteUri }
+  return $null
+}
+
 function Get-Isla($lat, $lon) {
   if ($lon -gt 3.6) { 'Menorca' } elseif ($lon -lt 1.7 -and $lat -lt 38.82) { 'Formentera' } elseif ($lon -lt 1.7) { 'Eivissa' } else { 'Mallorca' }
 }
@@ -48,7 +56,7 @@ $features = foreach ($e in $osm.elements) {
       isla = Get-Isla $lat $lon
       altitud = $t.ele
       capacidad = $t.capacity
-      web = if ($t.website) { $t.website } else { $t.'contact:website' }
+      web = Get-WebSegura $(if ($t.website) { $t.website } else { $t.'contact:website' })
       telefono = if ($t.phone) { $t.phone } else { $t.'contact:phone' }
       operador = $t.operator
     }

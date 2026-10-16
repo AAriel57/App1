@@ -7,10 +7,14 @@
   <meta name="theme-color" content="#1f1d18" media="(prefers-color-scheme: dark)">
   <title>Rutas y Refugios · Illes Balears</title>
   <meta name="description" content="Rutas de BTT conectadas a refugios de montaña en Mallorca, Menorca, Eivissa y Formentera.">
+  <!-- GitHub Pages no permite cabeceras propias: la política de seguridad va en meta.
+       Teselas: OpenTopoMap, CyclOSM y Waymarked Trails. El worker de MapLibre es del mismo origen. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.opentopomap.org https://*.tile-cyclosm.openstreetmap.fr https://tile.waymarkedtrails.org; connect-src 'self' https://*.tile.opentopomap.org https://*.tile-cyclosm.openstreetmap.fr https://tile.waymarkedtrails.org; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="vendor/maplibre-gl-6.11.2/maplibre-gl.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -137,7 +141,6 @@
 
   <p id="aviso" class="visualmente-oculto" aria-live="polite"></p>
 
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
