@@ -29,6 +29,14 @@ let etapas = []; // [{ n, nombre, puntos, dist, sube, firme: {asfalto, pista, se
 let etapaActiva = null; // número de etapa, 0 = travesía completa
 let pestana = 'rutas';
 
+// Estado compartible en la URL: #isla=Mallorca&etapa=3&radio=2.5&mapa=bici&mtb=1
+const hashInicial = new URLSearchParams(location.hash.slice(1));
+let capaBase = hashInicial.get('mapa') === 'bici' ? 'bici' : 'topo';
+let capaMtb = hashInicial.get('mtb') === '1';
+const islaInicial = ISLAS[hashInicial.get('isla')] && hashInicial.get('isla') !== 'todas' ? hashInicial.get('isla') : 'Mallorca';
+
+const OSM = 'Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const visible = (si) => ({ visibility: si ? 'visible' : 'none' });
 const ESTILO = {
   version: 8,
   sources: {
@@ -37,10 +45,28 @@ const ESTILO = {
       tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`),
       tileSize: 256,
       maxzoom: 17,
-      attribution: 'Mapa © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: `Mapa © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · ${OSM}`,
+    },
+    bici: {
+      type: 'raster',
+      tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png`),
+      tileSize: 256,
+      maxzoom: 20,
+      attribution: `Mapa <a href="https://www.cyclosm.org">CyclOSM</a> · ${OSM}`,
+    },
+    mtb: {
+      type: 'raster',
+      tiles: ['https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      maxzoom: 18,
+      attribution: 'Rutas MTB © <a href="https://mtb.waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)',
     },
   },
-  layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
+  layers: [
+    { id: 'topo', type: 'raster', source: 'topo', layout: visible(capaBase === 'topo') },
+    { id: 'bici', type: 'raster', source: 'bici', layout: visible(capaBase === 'bici') },
+    { id: 'mtb', type: 'raster', source: 'mtb', layout: visible(capaMtb), paint: { 'raster-opacity': 0.9 } },
+  ],
 };
 
 // Textos de los controles del mapa en español (los leen los lectores de pantalla)
@@ -60,13 +86,62 @@ const LOCALE = {
 const map = new maplibregl.Map({
   container: 'map',
   // La pestaña inicial es la de travesías: empezar ya en Mallorca evita un salto desde todo el Mediterráneo
-  bounds: ISLAS.Mallorca,
+  bounds: ISLAS[islaInicial],
   fitBoundsOptions: { padding: 30 },
   locale: LOCALE,
   cooperativeGestures: false,
 });
+
+// Selector de capas: mapa base (topográfico o ciclista) y rutas MTB señalizadas encima
+class ControlCapas {
+  onAdd() {
+    const el = document.createElement('details');
+    el.className = 'maplibregl-ctrl maplibregl-ctrl-group capas';
+    el.innerHTML = `
+      <summary aria-label="Capas del mapa" title="Capas del mapa">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>
+      </summary>
+      <div class="capas-menu">
+        <fieldset>
+          <legend>Mapa base</legend>
+          <label><input type="radio" name="capaBase" value="topo"> Topográfico</label>
+          <label><input type="radio" name="capaBase" value="bici"> Ciclista (CyclOSM)</label>
+        </fieldset>
+        <label class="capas-mtb"><input type="checkbox" name="capaMtb"> Rutas MTB señalizadas</label>
+      </div>`;
+    el.addEventListener('change', (e) => {
+      if (e.target.name === 'capaBase') capaBase = e.target.value;
+      if (e.target.name === 'capaMtb') capaMtb = e.target.checked;
+      aplicarCapas();
+      escribirHash();
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && el.open) { el.open = false; el.querySelector('summary').focus(); }
+    });
+    this.el = el;
+    sincronizarControlCapas();
+    return el;
+  }
+  onRemove() { this.el.remove(); }
+}
+const controlCapas = new ControlCapas();
+function sincronizarControlCapas() {
+  const el = controlCapas.el;
+  if (!el) return;
+  el.querySelectorAll('[name="capaBase"]').forEach((i) => (i.checked = i.value === capaBase));
+  el.querySelector('[name="capaMtb"]').checked = capaMtb;
+}
+function aplicarCapas() {
+  sincronizarControlCapas();
+  if (!map.getLayer('topo')) return;
+  map.setLayoutProperty('topo', 'visibility', capaBase === 'topo' ? 'visible' : 'none');
+  map.setLayoutProperty('bici', 'visibility', capaBase === 'bici' ? 'visible' : 'none');
+  map.setLayoutProperty('mtb', 'visibility', capaMtb ? 'visible' : 'none');
+}
+
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }), 'top-right');
+map.addControl(controlCapas, 'top-right');
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
 
 // El estilo se aplica después de escuchar style.load: con un estilo en línea el evento se emite en el
@@ -133,6 +208,16 @@ async function iniciarMapa() {
   map.on('mouseenter', 'refugios', () => (map.getCanvas().style.cursor = 'pointer'));
   map.on('mouseleave', 'refugios', () => (map.getCanvas().style.cursor = ''));
 
+  // Punto que sigue al cursor del perfil de altimetría
+  map.addSource('cursor', { type: 'geojson', data: vacio() });
+  map.addLayer({
+    id: 'cursor', type: 'circle', source: 'cursor',
+    paint: { 'circle-radius': 7, 'circle-color': COLORES.ruta, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 },
+  });
+  // Y al revés: pasar el ratón por la ruta mueve el cursor del perfil
+  map.on('mousemove', 'ruta-borde', (e) => ruta && mostrarCursor(cercania([e.lngLat.lng, e.lngLat.lat], ruta.puntos).km));
+  map.on('mouseleave', 'ruta-borde', ocultarCursor);
+
   actualizarIsla();
   await cargarEtapas();
 }
@@ -151,7 +236,8 @@ async function cargarEtapas() {
     });
     pintarEtapas();
     actualizarVistaRutas();
-    if (etapasVisibles() && !ruta) encuadrarEtapas();
+    if (etapaPendiente != null) aplicarEtapaDelHash();
+    else if (etapasVisibles() && !ruta) encuadrarEtapas();
   } catch (err) {
     console.error(err);
     $('rutasResumen').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
@@ -222,7 +308,7 @@ function pintarFirme(f) {
 }
 
 // e = null selecciona la travesía completa
-function seleccionarEtapa(e) {
+function seleccionarEtapa(e, { foco = true } = {}) {
   if (!etapas.length) return;
   mostrarError('');
   if (e) {
@@ -240,7 +326,8 @@ function seleccionarEtapa(e) {
   marcarEtapa();
   if (movil.matches) abrirPanel(false);
   dibujarRuta();
-  enfocarRuta();
+  if (foco) enfocarRuta();
+  escribirHash();
 }
 
 // En escritorio el detalle queda a la vista y recibe el foco; en el móvil el panel está plegado y manda el mapa
@@ -292,6 +379,7 @@ function cambiarPestana(nueva, foco = false) {
   if (foco) pestanas[nueva].focus();
   actualizarVistaRutas();
   if (etapasVisibles() && !ruta) encuadrarEtapas();
+  escribirHash();
 }
 for (const [k, b] of Object.entries(pestanas)) {
   b.addEventListener('click', () => cambiarPestana(k));
@@ -361,22 +449,69 @@ function mostrarError(texto) {
 
 // ---------- Islas ----------
 const botonesIsla = document.querySelectorAll('.islas button');
-botonesIsla.forEach((btn) =>
-  btn.addEventListener('click', () => {
-    islaActiva = btn.dataset.isla;
-    botonesIsla.forEach((b) => {
-      b.classList.toggle('activa', b === btn);
-      b.setAttribute('aria-pressed', String(b === btn));
-    });
-    // Una etapa de Mallorca no tiene sentido con el mapa en otra isla: se quita para no mostrar datos cruzados
-    if (etapaActiva != null && !ISLAS_CON_TRAVESIAS.includes(islaActiva)) quitarRuta({ encuadrar: false, foco: false });
-    actualizarIsla();
-    actualizarVistaRutas();
-    map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
+function elegirIsla(isla, { encuadrar = true, avisar = true } = {}) {
+  islaActiva = isla;
+  botonesIsla.forEach((b) => {
+    b.classList.toggle('activa', b.dataset.isla === isla);
+    b.setAttribute('aria-pressed', String(b.dataset.isla === isla));
+  });
+  // Una etapa de Mallorca no tiene sentido con el mapa en otra isla: se quita para no mostrar datos cruzados
+  if (etapaActiva != null && !ISLAS_CON_TRAVESIAS.includes(islaActiva)) quitarRuta({ encuadrar: false, foco: false });
+  actualizarIsla();
+  actualizarVistaRutas();
+  if (encuadrar) map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
+  if (avisar) {
     const n = visiblesEnIsla().length;
     anunciar(`${islaActiva === 'todas' ? 'Todas las islas' : islaActiva}: ${plural(n, 'refugio')}.`);
-  })
-);
+  }
+  escribirHash();
+}
+botonesIsla.forEach((btn) => btn.addEventListener('click', () => elegirIsla(btn.dataset.isla)));
+
+// ---------- Enlaces compartibles: el estado vive en la URL ----------
+let etapaPendiente = null; // etapa pedida en la URL antes de que carguen las etapas
+let aplicandoHash = false;
+
+function escribirHash() {
+  if (aplicandoHash) return;
+  const p = new URLSearchParams();
+  if (islaActiva !== 'todas') p.set('isla', islaActiva);
+  if (pestana === 'subir') p.set('vista', 'subir');
+  if (etapaActiva != null) p.set('etapa', etapaActiva === 0 ? 'completa' : etapaActiva);
+  if ($('radio').value !== '2') p.set('radio', $('radio').value);
+  if (capaBase === 'bici') p.set('mapa', 'bici');
+  if (capaMtb) p.set('mtb', '1');
+  const s = p.toString();
+  history.replaceState(null, '', s ? `#${s}` : location.pathname + location.search);
+}
+
+function aplicarHash(p) {
+  aplicandoHash = true;
+  const isla = ISLAS[p.get('isla')] ? p.get('isla') : 'todas';
+  if (isla !== islaActiva) elegirIsla(isla, { encuadrar: !p.has('etapa'), avisar: false });
+  const vista = p.get('vista') === 'subir' ? 'subir' : 'rutas';
+  if (vista !== pestana) cambiarPestana(vista);
+  const radio = Number(p.get('radio'));
+  ponerRadio(radio >= 0.5 && radio <= 10 ? String(Math.round(radio * 2) / 2) : '2');
+  capaBase = p.get('mapa') === 'bici' ? 'bici' : 'topo';
+  capaMtb = p.get('mtb') === '1';
+  aplicarCapas();
+  const etapa = p.get('etapa');
+  etapaPendiente = etapa === 'completa' ? 0 : Number(etapa) || null;
+  if (etapa == null && etapaActiva != null) quitarRuta({ foco: false });
+  aplicandoHash = false;
+  if (etapaPendiente != null && etapas.length) aplicarEtapaDelHash();
+}
+
+function aplicarEtapaDelHash() {
+  const n = etapaPendiente;
+  etapaPendiente = null;
+  if (!ISLAS_CON_TRAVESIAS.includes(islaActiva)) return;
+  if (n === 0) seleccionarEtapa(null, { foco: false });
+  else if (etapas[n - 1]) seleccionarEtapa(etapas[n - 1], { foco: false });
+}
+
+window.addEventListener('hashchange', () => aplicarHash(new URLSearchParams(location.hash.slice(1))));
 
 const visiblesEnIsla = () =>
   refugios.features.filter((f) => islaActiva === 'todas' || f.properties.isla === islaActiva);
@@ -477,16 +612,40 @@ $('ejemplo').addEventListener('click', async () => {
     mostrarError('No se ha podido cargar la ruta de ejemplo.');
   }
 });
-$('radio').addEventListener('input', () => {
+function ponerRadio(valor, anunciarCambio = false) {
+  $('radio').value = valor;
   const v = String(+$('radio').value).replace('.', ',');
   $('radioValor').textContent = v;
   $('radio').setAttribute('aria-valuetext', `${v} kilómetros`);
-  if (ruta) mostrarConectados(true);
+  if (ruta) mostrarConectados(anunciarCambio);
+}
+$('radio').addEventListener('input', () => {
+  ponerRadio($('radio').value, true);
+  escribirHash();
 });
 $('quitarRuta').addEventListener('click', () => quitarRuta());
 $('centrarRuta').addEventListener('click', () => {
   if (movil.matches) abrirPanel(false);
   encuadrarRuta();
+});
+
+// Compartir la etapa: hoja nativa del móvil o, si no la hay, copiar el enlace
+$('compartirRuta').addEventListener('click', async () => {
+  const boton = $('compartirRuta');
+  const url = location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: `${ruta.nombre} · Rutas y Refugios`, url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    boton.querySelector('span').textContent = 'Enlace copiado';
+    anunciar('Enlace de la etapa copiado.');
+    clearTimeout(boton.t);
+    boton.t = setTimeout(() => (boton.querySelector('span').textContent = 'Compartir'), 2500);
+  } catch (err) {
+    if (err?.name !== 'AbortError') mostrarError('No se ha podido copiar el enlace. Cópialo desde la barra de direcciones.');
+  }
 });
 
 async function leerGpx(texto, nombreArchivo) {
@@ -511,6 +670,7 @@ async function leerGpx(texto, nombreArchivo) {
   ruta = { nombre, puntos };
   etapaActiva = null;
   marcarEtapa();
+  escribirHash(); // un GPX propio no se puede compartir por enlace: quitar la etapa de la URL
   await mapaListo;
   if (movil.matches) abrirPanel(false); // dejar ver la ruta en el mapa; el resumen queda en el asa
   dibujarRuta();
@@ -538,6 +698,8 @@ function dibujarRuta() {
   $('firme').hidden = !ruta.firme;
   if (ruta.firme) pintarFirme(ruta.firme);
   else $('firme').innerHTML = '';
+  $('compartirRuta').hidden = etapaActiva == null;
+  ocultarCursor();
   dibujarPerfil();
   mostrarConectados();
 
@@ -557,7 +719,9 @@ function quitarRuta({ encuadrar = true, foco = true } = {}) {
   map.getSource('ruta')?.setData(vacio());
   if (map.getLayer('refugios-conectados')) map.setFilter('refugios-conectados', ['in', ['get', 'id'], ['literal', []]]);
   $('ruta').hidden = true;
+  ocultarCursor();
   actualizarAsa();
+  escribirHash();
   if (encuadrar) {
     if (etapasVisibles()) encuadrarEtapas();
     else map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
@@ -601,20 +765,103 @@ function dibujarPerfil() {
   const svg = $('perfil');
   const total = ruta.puntos.at(-1).km || 1;
   $('perfilKm').textContent = fKm(total);
+  const caja = $('perfilCaja');
+  caja.setAttribute('aria-valuemax', nf1.format(total).replace(',', '.'));
   if (pts.length < 2) {
-    svg.setAttribute('aria-label', 'Perfil de altimetría no disponible: el track no tiene datos de altitud.');
+    $('perfilDesc').textContent = 'Perfil de altimetría no disponible: el track no tiene datos de altitud.';
     $('perfilMax').textContent = $('perfilMin').textContent = '';
-    return (svg.innerHTML = '');
+    return (svg.innerHTML = '<line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>');
   }
   const min = Math.min(...pts.map((p) => p.ele));
   const max = Math.max(...pts.map((p) => p.ele));
   // Margen arriba y abajo para que las cotas no pisen la línea
   const y = (e) => 74 - ((e - min) / (max - min || 1)) * 54;
   const linea = pts.map((p, i) => `${i ? 'L' : 'M'}${((p.km / total) * 300).toFixed(1)},${y(p.ele).toFixed(1)}`).join('');
-  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g>`;
+  svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g><line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>`;
   $('perfilMax').textContent = fM(max);
   $('perfilMin').textContent = fM(min);
-  svg.setAttribute('aria-label', `Perfil de altimetría: entre ${fM(min)} y ${fM(max)}, empieza a ${fM(pts[0].ele)} y termina a ${fM(pts.at(-1).ele)}.`);
+  $('perfilDesc').textContent = `Perfil de altimetría: entre ${fM(min)} y ${fM(max)}, empieza a ${fM(pts[0].ele)} y termina a ${fM(pts.at(-1).ele)}. Usa las flechas para recorrerlo.`;
+}
+
+// ---------- Cursor del perfil enlazado con el mapa ----------
+let cursorKm = null;
+
+// Punto interpolado en un km de la ruta (búsqueda binaria sobre los km acumulados)
+function puntoEnKm(km) {
+  const pts = ruta.puntos;
+  let lo = 0, hi = pts.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (pts[mid].km < km) lo = mid; else hi = mid;
+  }
+  const a = pts[lo], b = pts[hi];
+  const t = b.km > a.km ? Math.min(1, Math.max(0, (km - a.km) / (b.km - a.km))) : 0;
+  const ele = a.ele != null && b.ele != null ? a.ele + t * (b.ele - a.ele) : (a.ele ?? b.ele);
+  return { lon: a.lon + t * (b.lon - a.lon), lat: a.lat + t * (b.lat - a.lat), ele };
+}
+
+// Pendiente media en ±100 m alrededor del punto, para que el ruido del GPS no la dispare
+function pendienteEn(km) {
+  const total = ruta.puntos.at(-1).km;
+  const a = Math.max(0, km - 0.1), b = Math.min(total, km + 0.1);
+  const ea = puntoEnKm(a).ele, eb = puntoEnKm(b).ele;
+  if (ea == null || eb == null || b - a < 0.02) return null;
+  return ((eb - ea) / ((b - a) * 1000)) * 100;
+}
+
+function mostrarCursor(km) {
+  if (!ruta) return;
+  const total = ruta.puntos.at(-1).km || 1;
+  cursorKm = Math.min(total, Math.max(0, km));
+  const p = puntoEnKm(cursorKm);
+  const pend = pendienteEn(cursorKm);
+  const x = (cursorKm / total) * 300;
+  const linea = $('perfilCursor');
+  if (linea) {
+    linea.setAttribute('x1', x);
+    linea.setAttribute('x2', x);
+    linea.classList.add('visible');
+  }
+  const partes = [`km ${nf1.format(cursorKm)}`, p.ele != null && fM(p.ele), pend != null && `${pend > 0 ? '+' : ''}${nf0.format(Math.round(pend))} %`].filter(Boolean);
+  const info = $('perfilInfo');
+  info.textContent = partes.join(' · ');
+  info.style.left = `${Math.min(80, Math.max(20, (cursorKm / total) * 100))}%`;
+  info.hidden = false;
+  const caja = $('perfilCaja');
+  caja.classList.add('con-cursor');
+  caja.setAttribute('aria-valuenow', cursorKm.toFixed(1));
+  caja.setAttribute('aria-valuetext', partes.join(', ').replace(' %', ' por ciento de pendiente'));
+  map.getSource('cursor')?.setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lon, p.lat] }, properties: {} });
+}
+
+function ocultarCursor() {
+  $('perfilCursor')?.classList.remove('visible');
+  $('perfilInfo').hidden = true;
+  $('perfilCaja').classList.remove('con-cursor');
+  map.getSource('cursor')?.setData(vacio());
+}
+
+{
+  const caja = $('perfilCaja');
+  const kmDesdePuntero = (e) => {
+    const r = $('perfil').getBoundingClientRect();
+    return ((e.clientX - r.left) / r.width) * (ruta.puntos.at(-1).km || 1);
+  };
+  caja.addEventListener('pointerdown', (e) => ruta && mostrarCursor(kmDesdePuntero(e)));
+  caja.addEventListener('pointermove', (e) => ruta && (e.pointerType === 'mouse' || e.buttons) && mostrarCursor(kmDesdePuntero(e)));
+  caja.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && document.activeElement !== caja && ocultarCursor());
+  caja.addEventListener('focus', () => ruta && mostrarCursor(cursorKm ?? 0));
+  caja.addEventListener('blur', ocultarCursor);
+  caja.addEventListener('keydown', (e) => {
+    if (!ruta) return;
+    const total = ruta.puntos.at(-1).km;
+    const paso = (e.shiftKey ? 10 : 1) * total / 100;
+    const km = cursorKm ?? 0;
+    const nuevo = { ArrowRight: km + paso, ArrowUp: km + paso, ArrowLeft: km - paso, ArrowDown: km - paso, PageUp: km + total / 10, PageDown: km - total / 10, Home: 0, End: total }[e.key];
+    if (nuevo == null) return;
+    e.preventDefault();
+    mostrarCursor(nuevo);
+  });
 }
 
 // Líneas discontinuas en el perfil donde quedan los refugios conectados
@@ -683,3 +930,6 @@ function cercania([lon, lat], puntos) {
 
 const vacio = () => ({ type: 'FeatureCollection', features: [] });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// Estado inicial desde la URL (enlace compartido)
+if (location.hash.length > 1) aplicarHash(hashInicial);

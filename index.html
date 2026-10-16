@@ -62,12 +62,14 @@
             <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
             <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
           </dl>
-          <div class="perfil-caja">
-            <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Perfil de altimetría"></svg>
+          <div class="perfil-caja" id="perfilCaja" tabindex="0" role="slider" aria-label="Recorrer el perfil de altimetría" aria-describedby="perfilDesc" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+            <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"></svg>
             <span class="perfil-eje perfil-max" id="perfilMax" aria-hidden="true"></span>
             <span class="perfil-eje perfil-min" id="perfilMin" aria-hidden="true"></span>
+            <span class="perfil-info" id="perfilInfo" aria-hidden="true" hidden></span>
             <div class="perfil-km" aria-hidden="true"><span>0 km</span><span id="perfilKm"></span></div>
           </div>
+          <p class="visualmente-oculto" id="perfilDesc"></p>
           <div class="firme" id="firme" hidden></div>
           <div class="ruta-acciones">
             <button type="button" class="boton primario" id="descargarGpx">
@@ -78,12 +80,16 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
               Centrar en el mapa
             </button>
+            <button type="button" class="boton" id="compartirRuta" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4m-7.6 6.8 7.6 4.4"/></svg>
+              <span>Compartir</span>
+            </button>
           </div>
           <h3 id="tConectados">Refugios conectados</h3>
           <label class="radio" for="radio">
             A menos de <output id="radioValor" for="radio">2</output> km de la ruta
           </label>
-          <input type="range" id="radio" min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
+          <input type="range" id="radio" autocomplete="off"min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
           <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
         </section>
 

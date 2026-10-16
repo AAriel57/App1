@@ -188,6 +188,38 @@ h1, h2, h3 { font-family: var(--fuente-titulo); font-weight: 700; letter-spacing
 }
 .ruta-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .ruta-acciones .boton { flex: 1 1 auto; }
+.ruta-acciones .primario { flex-basis: 100%; }
+.ruta-acciones [hidden] { display: none; }
+
+/* Cursor del perfil enlazado con el mapa */
+.perfil-caja { cursor: crosshair; touch-action: pan-y; border-radius: 10px; }
+.perfil-caja:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.perfil line.cursor { stroke: var(--text); stroke-width: 1.5; vector-effect: non-scaling-stroke; visibility: hidden; }
+.perfil line.cursor.visible { visibility: visible; }
+.perfil-caja.con-cursor .perfil-eje { opacity: 0; }
+.perfil-info {
+  position: absolute; top: 4px; transform: translateX(-50%); padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; pointer-events: none;
+  background: var(--text); color: var(--panel); box-shadow: 0 2px 6px #0003;
+}
+
+/* Selector de capas del mapa */
+.capas { position: relative; }
+.capas summary {
+  display: grid; place-items: center; width: 36px; height: 36px; cursor: pointer; list-style: none; color: #333;
+}
+.capas summary::-webkit-details-marker { display: none; }
+.capas summary svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.capas[open] summary { color: var(--accent); }
+.capas-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 3; width: max-content; min-width: 220px; padding: 10px 12px;
+  background: var(--panel); color: var(--text); border-radius: 10px; box-shadow: 0 4px 16px #0003; font: 14px/1.4 var(--fuente);
+}
+.capas-menu fieldset { border: 0; margin: 0 0 4px; padding: 0; }
+.capas-menu legend { padding: 0; margin-bottom: 2px; font-weight: 600; color: var(--muted); font-size: 12px; }
+.capas-menu label { display: flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; }
+.capas-menu input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.capas-mtb { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }
 
 /* Reparto del firme: asfalto / pista / sendero */
 .barra-firme { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--superficie); }
@@ -270,7 +302,8 @@ ol.lista-botones button::before {
 .maplibregl-ctrl-group button { width: 36px; height: 36px; }
 .maplibregl-ctrl-scale { font: 600 12px/1.3 var(--fuente); color: var(--tinta); }
 @media (pointer: coarse) {
-  .maplibregl-ctrl-group button { width: var(--toque); height: var(--toque); }
+  .maplibregl-ctrl-group button, .capas summary { width: var(--toque); height: var(--toque); }
+  .capas-menu label { min-height: var(--toque); }
 }
 
 /* ---------- Móvil: mapa a pantalla completa y panel inferior plegable ---------- */
