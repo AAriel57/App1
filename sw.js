@@ -1,7 +1,7 @@
 // Service worker: la app y sus datos funcionan sin conexión, y las teselas del mapa que ya se han visto
 // quedan guardadas (con límite) para consultarlas en la montaña sin cobertura.
 // Al cambiar cualquier archivo de la lista, subir VERSION para que los móviles descarguen la nueva.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP = `app-${VERSION}`;
 const TESELAS = 'teselas';
 const FUENTES = 'fuentes';
@@ -12,6 +12,7 @@ const ARCHIVOS_APP = [
   'index.html',
   'styles.css',
   'app.js',
+  'i18n.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',

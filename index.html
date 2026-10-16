@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="saltar" href="#panel">Saltar al panel de rutas</a>
+  <a class="saltar" href="#panel" data-t="saltar">Saltar al panel de rutas</a>
 
   <header class="topbar">
     <h1>
@@ -30,10 +30,10 @@
         <path class="marca-nieve" d="m11.5 9.5-2.7 4.5 1.9-.9 1.6 1.4 1.4-1.7Z"/>
         <path class="marca-refugio" d="M17 27v-4.6l4-3.4 4 3.4V27h-2.6v-2.7h-2.8V27Z"/>
       </svg>
-      <span class="titulo">Rutas y Refugios</span> <span class="sub">Illes Balears</span>
+      <span class="titulo" data-t="titulo">Rutas y Refugios</span> <span class="sub">Illes Balears</span>
     </h1>
-    <nav class="islas" aria-label="Filtrar refugios por isla">
-      <button type="button" data-isla="todas" class="activa" aria-pressed="true">Todas</button>
+    <nav class="islas" aria-label="Filtrar refugios por isla" data-t-aria="islasAria">
+      <button type="button" data-isla="todas" class="activa" aria-pressed="true" data-t="todas">Todas</button>
       <button type="button" data-isla="Mallorca" aria-pressed="false">Mallorca</button>
       <button type="button" data-isla="Menorca" aria-pressed="false">Menorca</button>
       <button type="button" data-isla="Eivissa" aria-pressed="false">Eivissa</button>
@@ -42,34 +42,34 @@
   </header>
 
   <main class="layout">
-    <aside class="panel" id="panel" tabindex="-1" aria-label="Panel de rutas y refugios">
+    <aside class="panel" id="panel" tabindex="-1" aria-label="Panel de rutas y refugios" data-t-aria="panelAria">
       <button type="button" class="asa" id="asa" aria-expanded="false" aria-controls="panelContenido">
         <span class="asa-barra" aria-hidden="true"></span>
-        <span class="asa-texto" id="asaTexto">Ver rutas y refugios</span>
+        <span class="asa-texto" id="asaTexto" data-t="asaVer">Ver rutas y refugios</span>
       </button>
 
       <div class="panel-contenido" id="panelContenido">
         <p class="error" id="error" role="alert" hidden></p>
 
-        <div class="pestanas" role="tablist" aria-label="Qué quieres ver">
-          <button type="button" role="tab" id="tabRutas" aria-selected="true" aria-controls="vistaRutas">Travesías</button>
-          <button type="button" role="tab" id="tabSubir" aria-selected="false" aria-controls="vistaSubir" tabindex="-1">Subir mi ruta</button>
+        <div class="pestanas" role="tablist" aria-label="Qué quieres ver" data-t-aria="pestanasAria">
+          <button type="button" role="tab" id="tabRutas" aria-selected="true" aria-controls="vistaRutas" data-t="tabRutas">Travesías</button>
+          <button type="button" role="tab" id="tabSubir" aria-selected="false" aria-controls="vistaSubir" tabindex="-1" data-t="tabSubir">Subir mi ruta</button>
         </div>
 
         <section class="ruta" id="ruta" hidden aria-labelledby="rutaNombre">
           <div class="ruta-cabecera">
-            <h2 id="rutaNombre" tabindex="-1">Ruta</h2>
-            <button type="button" class="quitar" id="quitarRuta" aria-label="Quitar la ruta">
+            <h2 id="rutaNombre" tabindex="-1" data-t="ruta">Ruta</h2>
+            <button type="button" class="quitar" id="quitarRuta" aria-label="Quitar la ruta" data-t-aria="quitarRuta">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
           <dl class="stats">
-            <div><dt>Distancia</dt><dd id="statDist">–</dd></div>
-            <div><dt>Desnivel +</dt><dd id="statUp">–</dd></div>
-            <div><dt>Desnivel −</dt><dd id="statDown">–</dd></div>
-            <div><dt>Alt. máx.</dt><dd id="statMax">–</dd></div>
+            <div><dt data-t="distancia">Distancia</dt><dd id="statDist">–</dd></div>
+            <div><dt data-t="desnivelMas">Desnivel +</dt><dd id="statUp">–</dd></div>
+            <div><dt data-t="desnivelMenos">Desnivel −</dt><dd id="statDown">–</dd></div>
+            <div><dt data-t="altMax">Alt. máx.</dt><dd id="statMax">–</dd></div>
           </dl>
-          <div class="perfil-caja" id="perfilCaja" tabindex="0" role="slider" aria-label="Recorrer el perfil de altimetría" aria-describedby="perfilDesc" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+          <div class="perfil-caja" id="perfilCaja" tabindex="0" role="slider" aria-label="Recorrer el perfil de altimetría" data-t-aria="perfilAria" aria-describedby="perfilDesc" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
             <svg id="perfil" class="perfil" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"></svg>
             <span class="perfil-eje perfil-max" id="perfilMax" aria-hidden="true"></span>
             <span class="perfil-eje perfil-min" id="perfilMin" aria-hidden="true"></span>
@@ -79,96 +79,106 @@
           <p class="visualmente-oculto" id="perfilDesc"></p>
           <div class="firme" id="firme" hidden></div>
           <fieldset class="colorear">
-            <legend>Color del trazado</legend>
+            <legend data-t="colorTrazado">Color del trazado</legend>
             <div class="segmentado">
-              <label><input type="radio" name="colorRuta" value="ninguno" checked> Simple</label>
-              <label><input type="radio" name="colorRuta" value="pendiente"> Pendiente</label>
-              <label id="opcionFirme"><input type="radio" name="colorRuta" value="firme"> Firme</label>
+              <label><input type="radio" name="colorRuta" value="ninguno" checked> <span data-t="simple">Simple</span></label>
+              <label><input type="radio" name="colorRuta" value="pendiente"> <span data-t="pendiente">Pendiente</span></label>
+              <label id="opcionFirme"><input type="radio" name="colorRuta" value="firme"> <span data-t="firme">Firme</span></label>
             </div>
             <ul class="leyenda-trazado" id="leyendaTrazado" hidden></ul>
           </fieldset>
           <div class="ruta-acciones">
             <button type="button" class="boton primario" id="descargarGpx">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
-              Descargar GPX
+              <span data-t="descargarGpx">Descargar GPX</span>
             </button>
             <button type="button" class="boton" id="centrarRuta">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
-              Centrar en el mapa
+              <span data-t="centrar">Centrar en el mapa</span>
             </button>
             <button type="button" class="boton" id="compartirRuta" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4m-7.6 6.8 7.6 4.4"/></svg>
-              <span>Compartir</span>
+              <span data-t="compartir">Compartir</span>
             </button>
           </div>
-          <h3 id="tConectados">Refugios conectados</h3>
+          <h3 id="tConectados" data-t="conectados">Refugios conectados</h3>
           <label class="radio" for="radio">
-            A menos de <output id="radioValor" for="radio">2</output> km de la ruta
+            <span data-t="radioAntes">A menos de</span> <output id="radioValor" for="radio">2</output> <span data-t="radioDespues">km de la ruta</span>
           </label>
-          <input type="range" id="radio" autocomplete="off"min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
+          <input type="range" id="radio" autocomplete="off" min="0.5" max="10" step="0.5" value="2" aria-valuetext="2 kilómetros">
           <ol id="conectados" class="conectados lista-botones" aria-labelledby="tConectados"></ol>
 
-          <h3 id="tPlan">Plan por días</h3>
-          <p class="nota">Reparte la ruta en jornadas y busca dónde dormir entre los refugios conectados.</p>
-          <label class="radio" for="diaKm">Hasta <output id="diaKmValor" for="diaKm">60</output> km al día</label>
+          <h3 id="tPlan" data-t="planDias">Plan por días</h3>
+          <p class="nota" data-t="planNota">Reparte la ruta en jornadas y busca dónde dormir entre los refugios conectados.</p>
+          <label class="radio" for="diaKm"><span data-t="hasta">Hasta</span> <output id="diaKmValor" for="diaKm">60</output> <span data-t="kmAlDia">km al día</span></label>
           <input type="range" id="diaKm" min="20" max="150" step="5" value="60" autocomplete="off" aria-valuetext="60 kilómetros al día">
-          <label class="radio" for="diaSube">Hasta <output id="diaSubeValor" for="diaSube">1500</output> m de subida al día</label>
+          <label class="radio" for="diaSube"><span data-t="hasta">Hasta</span> <output id="diaSubeValor" for="diaSube">1500</output> <span data-t="subidaAlDia">m de subida al día</span></label>
           <input type="range" id="diaSube" min="300" max="3000" step="100" value="1500" autocomplete="off" aria-valuetext="1500 metros de subida al día">
           <ol id="planDias" class="plan-dias lista-botones" aria-labelledby="tPlan"></ol>
         </section>
 
         <section class="rutas" id="vistaRutas" role="tabpanel" aria-labelledby="tabRutas">
-          <h2>Travesía de refugio a refugio</h2>
-          <p class="resumen" id="rutasResumen">Cargando etapas…</p>
-          <ol id="listaEtapas" class="lista-botones etapas" aria-label="Etapas"></ol>
+          <h2 data-t="travesiaTitulo">Travesía de refugio a refugio</h2>
+          <p class="resumen" id="rutasResumen" data-t="cargandoEtapas">Cargando etapas…</p>
+          <ol id="listaEtapas" class="lista-botones etapas" aria-label="Etapas" data-t-aria="etapasAria"></ol>
           <div class="sin-travesias" id="sinTravesias" hidden>
             <p id="sinTravesiasTexto"></p>
-            <button type="button" class="boton" id="verMallorca">Ver las travesías de Mallorca</button>
+            <button type="button" class="boton" id="verMallorca" data-t="verMallorca">Ver las travesías de Mallorca</button>
           </div>
-          <p class="nota">Recorridos en bici calculados automáticamente con <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> sobre OpenStreetMap, sobre todo por pistas y carreteras secundarias. Comprueba los accesos y el estado de los caminos antes de salir.</p>
+          <p class="nota"><span data-t="notaBrouterAntes">Recorridos en bici calculados automáticamente con</span> <a href="https://brouter.de" target="_blank" rel="noopener">BRouter</a> <span data-t="notaBrouterDespues">sobre OpenStreetMap, sobre todo por pistas y carreteras secundarias. Comprueba los accesos y el estado de los caminos antes de salir.</span></p>
         </section>
 
         <section class="subir" id="vistaSubir" role="tabpanel" aria-labelledby="tabSubir" hidden>
-          <h2 id="tSubir">Descubre qué refugios tienes cerca</h2>
-          <p class="resumen">Sube el track de tu salida y te mostramos los refugios que quedan junto al recorrido, ordenados por kilómetro.</p>
+          <h2 id="tSubir" data-t="subirTitulo">Descubre qué refugios tienes cerca</h2>
+          <p class="resumen" data-t="subirResumen">Sube el track de tu salida y te mostramos los refugios que quedan junto al recorrido, ordenados por kilómetro.</p>
           <label class="dropzone" id="dropzone">
             <input type="file" id="gpx" class="oculto" accept=".gpx,application/gpx+xml" aria-describedby="ayudaGpx">
-            <strong class="solo-raton">Arrastra un archivo GPX</strong>
-            <strong class="solo-tactil">Elegir archivo GPX</strong>
-            <span id="ayudaGpx"><span class="solo-raton">o haz clic para elegirlo · </span>formato .gpx de Strava, Wikiloc, Garmin…</span>
+            <strong class="solo-raton" data-t="arrastra">Arrastra un archivo GPX</strong>
+            <strong class="solo-tactil" data-t="elegirArchivo">Elegir archivo GPX</strong>
+            <span id="ayudaGpx"><span class="solo-raton" data-t="oClic">o haz clic para elegirlo · </span><span data-t="formatos">formato .gpx de Strava, Wikiloc, Garmin…</span></span>
           </label>
-          <button type="button" class="enlace" id="ejemplo">Probar con una ruta de ejemplo</button>
+          <button type="button" class="enlace" id="ejemplo" data-t="ejemplo">Probar con una ruta de ejemplo</button>
+          <section class="mis-rutas" id="misRutas" hidden aria-labelledby="tMisRutas">
+            <h3 id="tMisRutas" data-t="misRutas">Guardadas en este dispositivo</h3>
+            <ul id="listaMisRutas" class="lista-botones"></ul>
+            <p class="nota" data-t="misRutasNota">Solo se guardan en este navegador: nadie más puede verlas.</p>
+          </section>
         </section>
 
         <section class="leyenda" aria-labelledby="tRefugios">
-          <h2 id="tRefugios">Refugios <small id="contador"></small></h2>
+          <h2 id="tRefugios"><span data-t="refugios">Refugios</span> <small id="contador"></small></h2>
           <ul class="tipos">
-            <li><i class="dot guardado" aria-hidden="true"></i>Guardado <small>· con guarda</small></li>
-            <li><i class="dot libre" aria-hidden="true"></i>Libre <small>· sin guarda</small></li>
-            <li><i class="dot albergue" aria-hidden="true"></i>Albergue</li>
+            <li><i class="dot guardado" aria-hidden="true"></i><span data-t="guardado">Guardado</span> <small data-t="conGuarda">· con guarda</small></li>
+            <li><i class="dot libre" aria-hidden="true"></i><span data-t="libre">Libre</span> <small data-t="sinGuarda">· sin guarda</small></li>
+            <li><i class="dot albergue" aria-hidden="true"></i><span data-t="tipoAlbergue">Albergue</span></li>
           </ul>
           <p class="nota" id="notaIsla"></p>
           <details class="todos">
-            <summary>Ver la lista de refugios</summary>
+            <summary data-t="verLista">Ver la lista de refugios</summary>
             <ul id="listaRefugios" class="lista-botones"></ul>
           </details>
         </section>
 
         <section class="instalar" id="instalar" hidden aria-labelledby="tInstalar">
-          <h2 id="tInstalar">Llévatela a la montaña</h2>
-          <p class="nota">Instala la app: abre sin conexión con los refugios, las etapas y las zonas del mapa que ya hayas visto.</p>
+          <h2 id="tInstalar" data-t="instalarTitulo">Llévatela a la montaña</h2>
+          <p class="nota" data-t="instalarNota">Instala la app: abre sin conexión con los refugios, las etapas y las zonas del mapa que ya hayas visto.</p>
           <button type="button" class="boton" id="botonInstalar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
-            Instalar la app
+            <span data-t="instalar">Instalar la app</span>
           </button>
+        </section>
+
+        <section class="idioma">
+          <label for="idioma" data-t="idioma">Idioma</label>
+          <select id="idioma" autocomplete="off"></select>
         </section>
       </div>
     </aside>
 
-    <div id="map" class="map" role="region" aria-label="Mapa de refugios y rutas"></div>
+    <div id="map" class="map" role="region" aria-label="Mapa de refugios y rutas" data-t-aria="mapaAria"></div>
     <p class="sin-conexion" id="sinConexion" role="status" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.6 5.2A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 3.5-2M12.8 9.9a10 10 0 0 1 6.2 2.6M8.5 16a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>
-      Sin conexión: el mapa solo muestra las zonas que ya has visto
+      <span data-t="sinConexion">Sin conexión: el mapa solo muestra las zonas que ya has visto</span>
     </p>
   </main>
 

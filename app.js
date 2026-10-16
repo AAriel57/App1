@@ -1,6 +1,9 @@
 // MapLibre servido desde el propio sitio (vendor/), sin depender de un CDN: copia verificada contra la
 // integridad del paquete de npm. Para actualizarlo, sustituir la carpeta y cambiar la versión aquí y en index.html.
 import * as maplibregl from './vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
+import { t, idioma, IDIOMAS, guardarIdioma, traducirDocumento } from './i18n.js';
+
+traducirDocumento();
 
 const ISLAS = {
   todas: [[1.1, 38.6], [4.4, 40.15]],
@@ -13,15 +16,17 @@ const ISLAS = {
 const css = getComputedStyle(document.documentElement);
 const color = (nombre) => css.getPropertyValue(`--${nombre}`).trim();
 const COLORES = { guardado: color('guardado'), libre: color('libre'), albergue: color('albergue'), ruta: color('ruta'), etapas: color('etapas'), tinta: color('tinta') };
-const TIPO_TEXTO = { guardado: 'Refugio guardado', libre: 'Refugio libre', albergue: 'Albergue' };
+const TIPO_TEXTO = { guardado: t('tipoGuardado'), libre: t('tipoLibre'), albergue: t('tipoAlbergue') };
 const ISLAS_CON_TRAVESIAS = ['todas', 'Mallorca'];
+const nombreIsla = (isla) => (isla === 'todas' ? t('todasLasIslas') : isla);
 
-// Números en formato español: 28,5 km
-const nf1 = new Intl.NumberFormat('es', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const nf0 = new Intl.NumberFormat('es', { maximumFractionDigits: 0 });
+// Números en el formato del idioma: 28,5 km (es, ca, de) o 28.5 km (en)
+const nf1 = new Intl.NumberFormat(idioma, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf0 = new Intl.NumberFormat(idioma, { maximumFractionDigits: 0 });
 const fKm = (x) => `${nf1.format(x)} km`;
 const fM = (x) => `${nf0.format(Math.round(x))} m`;
-const plural = (n, s) => `${n} ${s}${n === 1 ? '' : 's'}`;
+// Recuentos con su plural: t('nRefugios', { n }) → «1 refugio», «3 refugios»
+const contar = (clave, n) => t(clave, { n });
 
 const $ = (id) => document.getElementById(id);
 const movil = matchMedia('(max-width: 760px)');
@@ -41,7 +46,7 @@ let capaMtb = hashInicial.get('mtb') === '1';
 const esIsla = (x) => typeof x === 'string' && Object.hasOwn(ISLAS, x);
 const islaInicial = esIsla(hashInicial.get('isla')) && hashInicial.get('isla') !== 'todas' ? hashInicial.get('isla') : 'Mallorca';
 
-const OSM = 'Datos © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const OSM = `${t('creditoDatos')} © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>`;
 const visible = (si) => ({ visibility: si ? 'visible' : 'none' });
 const ESTILO = {
   version: 8,
@@ -51,21 +56,21 @@ const ESTILO = {
       tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`),
       tileSize: 256,
       maxzoom: 17,
-      attribution: `Mapa © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · ${OSM}`,
+      attribution: `${t('creditoMapa')} © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · ${OSM}`,
     },
     bici: {
       type: 'raster',
       tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png`),
       tileSize: 256,
       maxzoom: 20,
-      attribution: `Mapa <a href="https://www.cyclosm.org">CyclOSM</a> · ${OSM}`,
+      attribution: `${t('creditoMapa')} <a href="https://www.cyclosm.org">CyclOSM</a> · ${OSM}`,
     },
     mtb: {
       type: 'raster',
       tiles: ['https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png'],
       tileSize: 256,
       maxzoom: 18,
-      attribution: 'Rutas MTB © <a href="https://mtb.waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)',
+      attribution: `${t('creditoMtb')} © <a href="https://mtb.waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)`,
     },
   },
   layers: [
@@ -75,18 +80,18 @@ const ESTILO = {
   ],
 };
 
-// Textos de los controles del mapa en español (los leen los lectores de pantalla)
+// Textos de los controles del mapa en el idioma elegido (los leen los lectores de pantalla)
 const LOCALE = {
-  'Map.Title': 'Mapa de refugios y rutas',
-  'NavigationControl.ZoomIn': 'Acercar',
-  'NavigationControl.ZoomOut': 'Alejar',
-  'NavigationControl.ResetBearing': 'Orientar al norte',
-  'GeolocateControl.FindMyLocation': 'Mostrar mi ubicación',
-  'GeolocateControl.LocationNotAvailable': 'Ubicación no disponible',
-  'AttributionControl.ToggleAttribution': 'Mostrar u ocultar créditos',
+  'Map.Title': t('mapaAria'),
+  'NavigationControl.ZoomIn': t('mapaAcercar'),
+  'NavigationControl.ZoomOut': t('mapaAlejar'),
+  'NavigationControl.ResetBearing': t('mapaNorte'),
+  'GeolocateControl.FindMyLocation': t('mapaUbicacion'),
+  'GeolocateControl.LocationNotAvailable': t('mapaSinUbicacion'),
+  'AttributionControl.ToggleAttribution': t('mapaCreditos'),
   'ScaleControl.Kilometers': 'km',
   'ScaleControl.Meters': 'm',
-  'Popup.Close': 'Cerrar',
+  'Popup.Close': t('cerrar'),
 };
 
 const map = new maplibregl.Map({
@@ -104,16 +109,16 @@ class ControlCapas {
     const el = document.createElement('details');
     el.className = 'maplibregl-ctrl maplibregl-ctrl-group capas';
     el.innerHTML = `
-      <summary aria-label="Capas del mapa" title="Capas del mapa">
+      <summary aria-label="${t('capas')}" title="${t('capas')}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>
       </summary>
       <div class="capas-menu">
         <fieldset>
-          <legend>Mapa base</legend>
-          <label><input type="radio" name="capaBase" value="topo"> Topográfico</label>
-          <label><input type="radio" name="capaBase" value="bici"> Ciclista (CyclOSM)</label>
+          <legend>${t('capaBase')}</legend>
+          <label><input type="radio" name="capaBase" value="topo"> ${t('capaTopo')}</label>
+          <label><input type="radio" name="capaBase" value="bici"> ${t('capaBici')}</label>
         </fieldset>
-        <label class="capas-mtb"><input type="checkbox" name="capaMtb"> Rutas MTB señalizadas</label>
+        <label class="capas-mtb"><input type="checkbox" name="capaMtb"> ${t('capaMtb')}</label>
       </div>`;
     el.addEventListener('change', (e) => {
       if (e.target.name === 'capaBase') capaBase = e.target.value;
@@ -154,7 +159,7 @@ map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
 // acto, y no esperamos a 'load' porque espera a todas las teselas (OpenTopoMap puede ir lento).
 const mapaListo = new Promise((resolve) => {
   map.once('style.load', () => iniciarMapa().then(resolve, (err) => {
-    mostrarError('No se han podido cargar los refugios. Comprueba la conexión y recarga la página.');
+    mostrarError(t('errorRefugios'));
     console.error(err);
     resolve();
   }));
@@ -241,7 +246,7 @@ async function cargarEtapas() {
       const dist = puntos.at(-1).km;
       // Los tramos vienen en metros de BRouter; se reescalan a los km calculados aquí para que encajen con los puntos
       const metros = p.tramos?.at(-1)?.[0] || 1;
-      const tramos = (p.tramos || []).map(([m, t]) => ({ hasta: (m / metros) * dist, tipo: { a: 'asfalto', p: 'pista', s: 'sendero' }[t] }));
+      const tramos = (p.tramos || []).map(([m, letra]) => ({ hasta: (m / metros) * dist, tipo: { a: 'asfalto', p: 'pista', s: 'sendero' }[letra] }));
       return { n: p.etapa, nombre: p.nombre, puntos, dist, sube: desnivel(puntos).sube, firme: { asfalto: p.asfalto, pista: p.pista, sendero: p.sendero }, tramos };
     });
     pintarEtapas();
@@ -250,7 +255,7 @@ async function cargarEtapas() {
     else if (etapasVisibles() && !ruta) encuadrarEtapas();
   } catch (err) {
     console.error(err);
-    $('rutasResumen').textContent = 'No se han podido cargar las rutas. Comprueba la conexión y recarga la página.';
+    $('rutasResumen').textContent = t('errorRutas');
   }
 }
 
@@ -263,7 +268,7 @@ function conKm(puntos) {
 function pintarEtapas() {
   const total = etapas.reduce((s, e) => s + e.dist, 0);
   const sube = etapas.reduce((s, e) => s + (e.sube ?? 0), 0);
-  $('rutasResumen').textContent = `Mallorca · ${etapas.length} etapas · ${nf0.format(total)} km · +${fM(sube)}, de Galatzó a s'Arenalet des Verger por la Serra de Tramuntana.`;
+  $('rutasResumen').textContent = t('resumenTravesia', { etapas: contar('nEtapas', etapas.length), km: nf0.format(total), sube: fM(sube) });
   const ol = $('listaEtapas');
   ol.innerHTML = '';
   for (const e of etapas) {
@@ -271,7 +276,7 @@ function pintarEtapas() {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.etapa = e.n;
-    b.innerHTML = `<span>${esc(e.nombre)}<small>${fKm(e.dist)} · +${fM(e.sube ?? 0)}</small>${barraFirme(e.firme)}<span class="visualmente-oculto">. Firme: ${textoFirme(e.firme)}</span></span>`;
+    b.innerHTML = `<span>${esc(e.nombre)}<small>${fKm(e.dist)} · +${fM(e.sube ?? 0)}</small>${barraFirme(e.firme)}<span class="visualmente-oculto">. ${t('firme')}: ${textoFirme(e.firme)}</span></span>`;
     aplicarAnchosFirme(b);
     b.addEventListener('click', () => seleccionarEtapa(e));
     li.append(b);
@@ -282,7 +287,7 @@ function pintarEtapas() {
   const b = document.createElement('button');
   b.type = 'button';
   b.dataset.etapa = 0;
-  b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="2"/><circle cx="19" cy="7" r="2"/><path d="M7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6"/></svg><span>Travesía completa<small>${nf0.format(total)} km · las ${etapas.length} etapas seguidas</small></span>`;
+  b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="17" r="2"/><circle cx="19" cy="7" r="2"/><path d="M7 17h6a3 3 0 0 0 0-6h-2a3 3 0 0 1 0-6h6"/></svg><span>${t('travesiaCompleta')}<small>${nf0.format(total)} km · ${t('etapasSeguidas', { n: etapas.length })}</small></span>`;
   b.addEventListener('click', () => seleccionarEtapa(null));
   li.append(b);
   ol.append(li);
@@ -303,7 +308,7 @@ function firme100(f) {
 
 const textoFirme = (f) => {
   const r = firme100(f);
-  return TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `${r[k]} % ${k}`).join(' · ');
+  return TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `${r[k]} % ${t(k)}`).join(' · ');
 };
 
 const barraFirme = (f) => {
@@ -319,8 +324,8 @@ function aplicarAnchosFirme(contenedor) {
 function pintarFirme(f) {
   const r = firme100(f);
   $('firme').innerHTML =
-    `<span class="visualmente-oculto">Firme: ${textoFirme(f)}</span>${barraFirme(f)}` +
-    `<ul aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<li><i class="muestra ${k}"></i><b>${r[k]} %</b> ${k}</li>`).join('')}</ul>`;
+    `<span class="visualmente-oculto">${t('firme')}: ${textoFirme(f)}</span>${barraFirme(f)}` +
+    `<ul aria-hidden="true">${TIPOS_FIRME.filter((k) => r[k] > 0).map((k) => `<li><i class="muestra ${k}"></i><b>${r[k]} %</b> ${t(k)}</li>`).join('')}</ul>`;
   aplicarAnchosFirme($('firme'));
 }
 
@@ -330,7 +335,7 @@ function seleccionarEtapa(e, { foco = true } = {}) {
   mostrarError('');
   if (e) {
     etapaActiva = e.n;
-    ruta = { nombre: `Etapa ${e.n}: ${e.nombre}`, puntos: e.puntos.map((p) => ({ ...p })), firme: e.firme, tramos: e.tramos };
+    ruta = { nombre: `${t('etapaN', { n: e.n })}: ${e.nombre}`, puntos: e.puntos.map((p) => ({ ...p })), firme: e.firme, tramos: e.tramos };
   } else {
     etapaActiva = 0;
     const puntos = conKm(etapas.flatMap((x) => x.puntos.map((p) => ({ ...p }))));
@@ -345,7 +350,7 @@ function seleccionarEtapa(e, { foco = true } = {}) {
       base += x.dist;
       return t;
     });
-    ruta = { nombre: 'Travesía completa de Mallorca', puntos, firme, tramos };
+    ruta = { nombre: t('travesiaCompletaMallorca'), puntos, firme, tramos };
   }
   marcarEtapa();
   if (movil.matches) abrirPanel(false);
@@ -371,7 +376,7 @@ function actualizarVistaRutas() {
   $('listaEtapas').hidden = !hay;
   $('rutasResumen').hidden = !hay;
   $('sinTravesias').hidden = hay;
-  if (!hay) $('sinTravesiasTexto').textContent = `Aún no hay travesías en ${islaActiva}. De momento solo hay etapas de refugio a refugio en Mallorca.`;
+  if (!hay) $('sinTravesiasTexto').textContent = t('sinTravesias', { isla: islaActiva });
   const vis = etapasVisibles() ? 'visible' : 'none';
   for (const id of ['etapas-borde', 'etapas']) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
 }
@@ -452,10 +457,10 @@ document.querySelector('.saltar').addEventListener('click', () => movil.matches 
 
 function actualizarAsa() {
   const texto = $('asaTexto');
-  if (panel.classList.contains('abierto')) return (texto.textContent = 'Ver el mapa');
-  if (!ruta) return (texto.textContent = 'Ver rutas y refugios');
-  const nombre = etapaActiva > 0 ? `Etapa ${etapaActiva}` : etapaActiva === 0 ? 'Travesía completa' : ruta.nombre;
-  texto.textContent = `${nombre} · ${fKm(ruta.puntos.at(-1).km)} · ${plural(conectadosActuales.length, 'refugio')} cerca`;
+  if (panel.classList.contains('abierto')) return (texto.textContent = t('verMapa'));
+  if (!ruta) return (texto.textContent = t('asaVer'));
+  const nombre = etapaActiva > 0 ? t('etapaN', { n: etapaActiva }) : etapaActiva === 0 ? t('travesiaCompleta') : ruta.nombre;
+  texto.textContent = `${nombre} · ${fKm(ruta.puntos.at(-1).km)} · ${t('nRefugiosCerca', { n: conectadosActuales.length })}`;
 }
 
 // ---------- Avisos accesibles ----------
@@ -486,7 +491,7 @@ function elegirIsla(isla, { encuadrar = true, avisar = true } = {}) {
   if (encuadrar) map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
   if (avisar) {
     const n = visiblesEnIsla().length;
-    anunciar(`${islaActiva === 'todas' ? 'Todas las islas' : islaActiva}: ${plural(n, 'refugio')}.`);
+    anunciar(`${nombreIsla(islaActiva)}: ${contar('nRefugios', n)}.`);
   }
   escribirHash();
 }
@@ -502,6 +507,7 @@ function escribirHash() {
   if (islaActiva !== 'todas') p.set('isla', islaActiva);
   if (pestana === 'subir') p.set('vista', 'subir');
   if (etapaActiva != null) p.set('etapa', etapaActiva === 0 ? 'completa' : etapaActiva);
+  else if (ruta?.idLocal) p.set('mia', ruta.idLocal);
   if ($('radio').value !== '2') p.set('radio', $('radio').value);
   if (capaBase === 'bici') p.set('mapa', 'bici');
   if (capaMtb) p.set('mtb', '1');
@@ -528,7 +534,9 @@ function aplicarHash(p) {
   const etapa = p.get('etapa');
   etapaPendiente = etapa === 'completa' ? 0 : Number(etapa) || null;
   if (etapa == null && etapaActiva != null) quitarRuta({ foco: false });
+  const mia = Number(p.get('mia'));
   aplicandoHash = false;
+  if (etapa == null && mia && mia !== ruta?.idLocal) abrirRutaLocal(mia, { foco: false });
   if (etapaPendiente != null && etapas.length) aplicarEtapaDelHash();
 }
 
@@ -553,7 +561,7 @@ function actualizarIsla() {
   $('contador').textContent = `(${visibles.length})`;
   $('notaIsla').textContent =
     islaActiva !== 'todas' && !visibles.some((f) => f.properties.tipo !== 'albergue')
-      ? `Todavía no hay refugios de montaña registrados en ${islaActiva}. La comunidad podrá añadirlos.`
+      ? t('sinRefugiosIsla', { isla: islaActiva })
       : '';
   pintarListaRefugios(visibles);
 }
@@ -562,14 +570,14 @@ function pintarListaRefugios(visibles) {
   const ul = $('listaRefugios');
   ul.innerHTML = '';
   if (!visibles.length) {
-    ul.innerHTML = '<li class="vacio">No hay refugios en esta isla.</li>';
+    ul.innerHTML = `<li class="vacio">${t('noHayRefugios')}</li>`;
     return;
   }
   [...visibles]
     .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es'))
     .forEach((f) => {
       const p = f.properties;
-      ul.append(botonRefugio(f, `${esc(p.nombre)}<small>${TIPO_TEXTO[p.tipo]}${p.altitud ? ` · altitud ${esc(p.altitud)} m` : ''}</small>`, true));
+      ul.append(botonRefugio(f, `${esc(p.nombre)}<small>${TIPO_TEXTO[p.tipo]}${p.altitud ? ` · ${t('altitud').toLowerCase()} ${esc(p.altitud)} m` : ''}</small>`, true));
     });
 }
 
@@ -596,12 +604,12 @@ function abrirPopup(f, origen) {
   const filas = [
     `<h4>${esc(p.nombre)}</h4>`,
     `<p>${TIPO_TEXTO[p.tipo]} · ${esc(p.isla)}</p>`,
-    enRuta && `<p class="en-ruta">En el km ${nf1.format(enRuta.km)} de la ruta · ${textoDesvio(enRuta.dist)}</p>`,
-    p.altitud && `<p>Altitud: ${esc(p.altitud)} m</p>`,
-    p.capacidad && `<p>Plazas: ${esc(p.capacidad)}</p>`,
-    p.operador && `<p>Gestión: ${esc(p.operador)}</p>`,
-    p.telefono && `<p>Tel.: <a href="tel:${esc(p.telefono)}">${esc(p.telefono)}</a></p>`,
-    urlSegura(p.web) && `<p><a href="${esc(urlSegura(p.web))}" target="_blank" rel="noopener noreferrer">Web<span class="visualmente-oculto"> de ${esc(p.nombre)} (se abre en otra pestaña)</span></a></p>`,
+    enRuta && `<p class="en-ruta">${t('enElKmDeLaRuta', { km: nf1.format(enRuta.km) })} · ${textoDesvio(enRuta.dist)}</p>`,
+    p.altitud && `<p>${t('altitud')}: ${esc(p.altitud)} m</p>`,
+    p.capacidad && `<p>${t('plazas')}: ${esc(p.capacidad)}</p>`,
+    p.operador && `<p>${t('gestion')}: ${esc(p.operador)}</p>`,
+    p.telefono && `<p>${t('telefono')}: <a href="tel:${esc(p.telefono)}">${esc(p.telefono)}</a></p>`,
+    urlSegura(p.web) && `<p><a href="${esc(urlSegura(p.web))}" target="_blank" rel="noopener noreferrer">Web<span class="visualmente-oculto"> ${esc(t('webDe', { nombre: p.nombre }))}</span></a></p>`,
   ];
   if (popup) { popup.off('close', alCerrar); popup.remove(); }
   popup = new maplibregl.Popup({ offset: 12, maxWidth: '280px', focusAfterOpen: true })
@@ -638,24 +646,24 @@ const GPX_MAX_MB = 25;
 const GPX_MAX_PUNTOS = 300000;
 function abrirArchivoGpx(f) {
   if (f.size > GPX_MAX_MB * 1024 * 1024) {
-    return mostrarError(`«${f.name}» ocupa ${nf1.format(f.size / 1024 / 1024)} MB y el máximo es ${GPX_MAX_MB} MB. Simplifica el track en tu aplicación antes de exportarlo.`);
+    return mostrarError(t('errorGpxGrande', { archivo: f.name, mb: nf1.format(f.size / 1024 / 1024), max: GPX_MAX_MB }));
   }
-  f.text().then((t) => leerGpx(t, f.name), () => mostrarError(`No se ha podido leer «${f.name}».`));
+  f.text().then((texto) => leerGpx(texto, f.name), () => mostrarError(t('errorLeer', { archivo: f.name })));
 }
 $('ejemplo').addEventListener('click', async () => {
   try {
     const r = await fetch('data/ejemplo-prueba.gpx');
     if (!r.ok) throw new Error();
-    leerGpx(await r.text(), 'ejemplo-prueba.gpx');
+    leerGpx(await r.text(), 'ejemplo-prueba.gpx', { guardar: false }); // el ejemplo no se guarda en el dispositivo
   } catch {
-    mostrarError('No se ha podido cargar la ruta de ejemplo.');
+    mostrarError(t('errorEjemplo'));
   }
 });
 function ponerRadio(valor, anunciarCambio = false) {
   $('radio').value = valor;
-  const v = String(+$('radio').value).replace('.', ',');
+  const v = nf0.format(+$('radio').value) === String(+$('radio').value) ? String(+$('radio').value) : nf1.format(+$('radio').value);
   $('radioValor').textContent = v;
-  $('radio').setAttribute('aria-valuetext', `${v} kilómetros`);
+  $('radio').setAttribute('aria-valuetext', t('kmAria', { n: v }));
   if (ruta) mostrarConectados(anunciarCambio);
 }
 $('radio').addEventListener('input', () => {
@@ -674,28 +682,28 @@ $('compartirRuta').addEventListener('click', async () => {
   const url = location.href;
   try {
     if (navigator.share) {
-      await navigator.share({ title: `${ruta.nombre} · Rutas y Refugios`, url });
+      await navigator.share({ title: `${ruta.nombre} · ${t('titulo')}`, url });
       return;
     }
     await navigator.clipboard.writeText(url);
-    boton.querySelector('span').textContent = 'Enlace copiado';
-    anunciar('Enlace de la etapa copiado.');
+    boton.querySelector('span').textContent = t('enlaceCopiado');
+    anunciar(t('enlaceCopiadoAviso'));
     clearTimeout(boton.t);
-    boton.t = setTimeout(() => (boton.querySelector('span').textContent = 'Compartir'), 2500);
+    boton.t = setTimeout(() => (boton.querySelector('span').textContent = t('compartir')), 2500);
   } catch (err) {
-    if (err?.name !== 'AbortError') mostrarError('No se ha podido copiar el enlace. Cópialo desde la barra de direcciones.');
+    if (err?.name !== 'AbortError') mostrarError(t('errorCopiar'));
   }
 });
 
-async function leerGpx(texto, nombreArchivo) {
+async function leerGpx(texto, nombreArchivo, { guardar = true } = {}) {
   mostrarError('');
   const xml = new DOMParser().parseFromString(texto, 'application/xml');
   if (xml.querySelector('parsererror')) {
-    return mostrarError(`«${nombreArchivo}» no es un archivo GPX válido. Expórtalo de nuevo desde tu aplicación (formato .gpx).`);
+    return mostrarError(t('errorGpxInvalido', { archivo: nombreArchivo }));
   }
   const nodos = xml.querySelectorAll('trkpt, rtept');
   if (nodos.length > GPX_MAX_PUNTOS) {
-    return mostrarError(`«${nombreArchivo}» tiene ${nf0.format(nodos.length)} puntos y el máximo es ${nf0.format(GPX_MAX_PUNTOS)}. Simplifica el track antes de subirlo.`);
+    return mostrarError(t('errorGpxPuntos', { archivo: nombreArchivo, n: nf0.format(nodos.length), max: nf0.format(GPX_MAX_PUNTOS) }));
   }
   // parseFloat y no +: un atributo ausente (null) daría 0, una coordenada válida
   const puntos = [...nodos].map((n) => ({
@@ -704,20 +712,28 @@ async function leerGpx(texto, nombreArchivo) {
     ele: n.querySelector('ele') ? +n.querySelector('ele').textContent : null,
   })).filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon));
   if (puntos.length < 2) {
-    return mostrarError(`«${nombreArchivo}» no contiene ningún track. Asegúrate de exportar la ruta, no solo los puntos de interés.`);
+    return mostrarError(t('errorGpxSinTrack', { archivo: nombreArchivo }));
   }
 
   conKm(puntos);
 
   const nombre = xml.querySelector('trk > name, rte > name, metadata > name')?.textContent.trim() || nombreArchivo.replace(/\.gpx$/i, '');
   ruta = { nombre, puntos };
+  await mostrarRutaPropia();
+  if (guardar) ruta.idLocal = await guardarRutaLocal(ruta);
+  escribirHash();
+  pintarMisRutas();
+}
+
+// Común a un GPX recién subido y a una ruta guardada en el dispositivo
+async function mostrarRutaPropia({ foco = true } = {}) {
   etapaActiva = null;
   marcarEtapa();
   escribirHash(); // un GPX propio no se puede compartir por enlace: quitar la etapa de la URL
   await mapaListo;
   if (movil.matches) abrirPanel(false); // dejar ver la ruta en el mapa; el resumen queda en el asa
   dibujarRuta();
-  enfocarRuta();
+  if (foco) enfocarRuta();
 }
 
 function encuadrarRuta() {
@@ -749,9 +765,9 @@ function dibujarRuta() {
 
   const n = conectadosActuales.length;
   anunciar(
-    `Ruta «${ruta.nombre}» cargada: ${nf1.format(dist)} kilómetros` +
-      (sube != null ? `, ${nf0.format(Math.round(sube))} metros de desnivel positivo` : '') +
-      `. ${n ? `${plural(n, 'refugio')} a menos de ${$('radioValor').textContent} km.` : 'Ningún refugio cerca.'}`
+    t('avisoRuta', { nombre: ruta.nombre, km: nf1.format(dist) }) +
+      (sube != null ? t('avisoRutaSube', { m: nf0.format(Math.round(sube)) }) : '') +
+      '. ' + (n ? t('nRefugiosAMenos', { n, km: $('radioValor').textContent }) + '.' : t('ningunRefugioCerca'))
   );
 }
 
@@ -771,7 +787,7 @@ function quitarRuta({ encuadrar = true, foco = true } = {}) {
     if (etapasVisibles()) encuadrarEtapas();
     else map.fitBounds(ISLAS[islaActiva], { padding: margen(30) });
   }
-  anunciar('Ruta quitada.');
+  anunciar(t('rutaQuitada'));
   if (foco) (pestana === 'rutas' ? $('tabRutas') : $('gpx')).focus();
 }
 
@@ -813,7 +829,7 @@ function dibujarPerfil() {
   const caja = $('perfilCaja');
   caja.setAttribute('aria-valuemax', nf1.format(total).replace(',', '.'));
   if (pts.length < 2) {
-    $('perfilDesc').textContent = 'Perfil de altimetría no disponible: el track no tiene datos de altitud.';
+    $('perfilDesc').textContent = t('perfilSinDatos');
     $('perfilMax').textContent = $('perfilMin').textContent = '';
     return (svg.innerHTML = '<line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>');
   }
@@ -825,7 +841,7 @@ function dibujarPerfil() {
   svg.innerHTML = `<path class="area" d="${linea}L300,80L0,80Z"/><path class="linea" d="${linea}"/><g id="perfilMarcas"></g><g id="perfilDias"></g><line id="perfilCursor" class="cursor" x1="0" x2="0" y1="0" y2="80"/>`;
   $('perfilMax').textContent = fM(max);
   $('perfilMin').textContent = fM(min);
-  $('perfilDesc').textContent = `Perfil de altimetría: entre ${fM(min)} y ${fM(max)}, empieza a ${fM(pts[0].ele)} y termina a ${fM(pts.at(-1).ele)}. Usa las flechas para recorrerlo.`;
+  $('perfilDesc').textContent = t('perfilDesc', { min: fM(min), max: fM(max), inicio: fM(pts[0].ele), fin: fM(pts.at(-1).ele) });
 }
 
 // ---------- Cursor del perfil enlazado con el mapa ----------
@@ -875,7 +891,7 @@ function mostrarCursor(km) {
   const caja = $('perfilCaja');
   caja.classList.add('con-cursor');
   caja.setAttribute('aria-valuenow', cursorKm.toFixed(1));
-  caja.setAttribute('aria-valuetext', partes.join(', ').replace(' %', ' por ciento de pendiente'));
+  caja.setAttribute('aria-valuetext', partes.join(', ').replace(' %', ` ${t('porCientoPendiente')}`));
   map.getSource('cursor')?.setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lon, p.lat] }, properties: {} });
 }
 
@@ -922,7 +938,7 @@ function marcarRefugiosEnPerfil() {
 // ---------- Trazado coloreado por pendiente o por firme ----------
 let colorRuta = 'ninguno';
 const CLASES_PENDIENTE = [
-  [3, '#3f9b5a', '0–3 %'], [6, '#c9a400', '3–6 %'], [9, '#e07b00', '6–9 %'], [12, '#d0202a', '9–12 %'], [Infinity, '#5e0d33', 'más del 12 %'],
+  [3, '#3f9b5a', '0–3 %'], [6, '#c9a400', '3–6 %'], [9, '#e07b00', '6–9 %'], [12, '#d0202a', '9–12 %'], [Infinity, '#5e0d33', t('masDel12')],
 ];
 // Colores fijos: el mapa base es claro también en modo oscuro
 const COLOR_FIRME = { asfalto: '#5f5b52', pista: '#b9793a', sendero: '#2f6b2a' };
@@ -962,10 +978,10 @@ function pintarTrazado() {
   map.getSource('ruta')?.setData({ type: 'FeatureCollection', features: segmentosRuta() });
   const ley = $('leyendaTrazado');
   const filas = colorRuta === 'pendiente'
-    ? CLASES_PENDIENTE.map(([, c, t]) => [c, t])
-    : colorRuta === 'firme' ? TIPOS_FIRME.map((k) => [COLOR_FIRME[k], k]) : [];
+    ? CLASES_PENDIENTE.map(([, c, texto]) => [c, texto])
+    : colorRuta === 'firme' ? TIPOS_FIRME.map((k) => [COLOR_FIRME[k], t(k)]) : [];
   ley.hidden = !filas.length;
-  ley.innerHTML = filas.map(([, t]) => `<li><i class="muestra"></i>${t}</li>`).join('') + (colorRuta === 'pendiente' ? '<li class="nota">sube o baja</li>' : '');
+  ley.innerHTML = filas.map(([, texto]) => `<li><i class="muestra"></i>${texto}</li>`).join('') + (colorRuta === 'pendiente' ? `<li class="nota">${t('subeOBaja')}</li>` : '');
   ley.querySelectorAll('.muestra').forEach((m, k) => (m.style.background = filas[k][0]));
 }
 
@@ -1050,15 +1066,15 @@ function pintarPlan(dias) {
     const sube = subidaEntre(d.desde, d.hasta);
     const ultimo = k === dias.length - 1;
     const fin = ultimo
-      ? 'Llegada al final de la ruta'
+      ? t('llegada')
       : d.refugio
-        ? `Noche en ${esc(d.refugio.f.properties.nombre)} · ${textoDesvio(d.refugio.dist)}`
-        : `Sin refugio en este tramo: busca dónde dormir cerca del km ${nf0.format(d.hasta)}`;
+        ? `${esc(t('nocheEn', { nombre: d.refugio.f.properties.nombre }))} · ${textoDesvio(d.refugio.dist)}`
+        : t('sinRefugioTramo', { km: nf0.format(d.hasta) });
     const li = document.createElement('li');
     const b = document.createElement('button');
     b.type = 'button';
     b.className = d.sinRefugio && !ultimo ? 'sin-refugio' : '';
-    b.innerHTML = `<span><b>Día ${k + 1}</b> · ${fKm(d.hasta - d.desde)} · +${fM(sube)}<small>${fin}</small></span>`;
+    b.innerHTML = `<span><b>${t('diaN', { n: k + 1 })}</b> · ${fKm(d.hasta - d.desde)} · +${fM(sube)}<small>${fin}</small></span>`;
     b.addEventListener('click', () => encuadrarTramo(d.desde, d.hasta));
     li.append(b);
     ol.append(li);
@@ -1073,7 +1089,7 @@ function pintarPlan(dias) {
     const el = document.createElement('div');
     el.className = `marca-noche${d.sinRefugio ? ' sin-refugio' : ''}`;
     el.innerHTML = `<i><b>${k + 1}</b></i>`;
-    el.title = d.refugio ? `Noche ${k + 1}: ${d.refugio.f.properties.nombre}` : `Fin del día ${k + 1}`;
+    el.title = d.refugio ? `${t('nocheN', { n: k + 1 })}: ${d.refugio.f.properties.nombre}` : t('finDiaN', { n: k + 1 });
     const pos = d.refugio ? d.refugio.f.geometry.coordinates : (({ lon, lat }) => [lon, lat])(puntoEnKm(d.hasta));
     marcasNoche.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(pos).addTo(map));
   });
@@ -1102,8 +1118,8 @@ function ponerLimitesDia(km, sube) {
 function actualizarLimitesDia() {
   $('diaKmValor').textContent = $('diaKm').value;
   $('diaSubeValor').textContent = nf0.format(+$('diaSube').value);
-  $('diaKm').setAttribute('aria-valuetext', `${$('diaKm').value} kilómetros al día`);
-  $('diaSube').setAttribute('aria-valuetext', `${$('diaSube').value} metros de subida al día`);
+  $('diaKm').setAttribute('aria-valuetext', t('kmAlDiaAria', { n: $('diaKm').value }));
+  $('diaSube').setAttribute('aria-valuetext', t('subidaAlDiaAria', { n: $('diaSube').value }));
 }
 for (const id of ['diaKm', 'diaSube']) {
   $(id).addEventListener('input', () => {
@@ -1111,15 +1127,15 @@ for (const id of ['diaKm', 'diaSube']) {
     if (!ruta) return;
     planificarDias();
     clearTimeout(planificarDias.t);
-    planificarDias.t = setTimeout(() => anunciar(`Plan de ${plural($('planDias').children.length, 'día')}.`), 500);
+    planificarDias.t = setTimeout(() => anunciar(t('planDeNDias', { n: $('planDias').children.length })), 500);
   });
   $(id).addEventListener('change', escribirHash);
 }
 
 function textoDesvio(dist) {
-  if (dist < 0.1) return 'a pie de ruta';
-  if (dist < 1) return `a ${nf0.format(Math.round(dist * 100) * 10)} m del trazado`;
-  return `a ${fKm(dist)} del trazado`;
+  if (dist < 0.1) return t('aPieDeRuta');
+  if (dist < 1) return t('aDelTrazado', { d: `${nf0.format(Math.round(dist * 100) * 10)} m` });
+  return t('aDelTrazado', { d: fKm(dist) });
 }
 
 function mostrarConectados(anunciarCambio = false) {
@@ -1133,9 +1149,9 @@ function mostrarConectados(anunciarCambio = false) {
   const ol = $('conectados');
   ol.innerHTML = conectadosActuales.length
     ? ''
-    : `<li class="vacio">Ningún refugio a menos de ${$('radioValor').textContent} km. Prueba a ampliar la distancia.</li>`;
+    : `<li class="vacio">${t('ningunRefugioRadio', { km: $('radioValor').textContent })}</li>`;
   for (const c of conectadosActuales) {
-    ol.append(botonRefugio(c.f, `${esc(c.f.properties.nombre)}<small>En el km ${nf1.format(c.km)} · ${textoDesvio(c.dist)} · ${TIPO_TEXTO[c.f.properties.tipo]}</small>`, true));
+    ol.append(botonRefugio(c.f, `${esc(c.f.properties.nombre)}<small>${t('enElKm', { km: nf1.format(c.km) })} · ${textoDesvio(c.dist)} · ${TIPO_TEXTO[c.f.properties.tipo]}</small>`, true));
   }
   marcarRefugiosEnPerfil();
   planificarDias();
@@ -1143,7 +1159,7 @@ function mostrarConectados(anunciarCambio = false) {
   if (anunciarCambio) {
     clearTimeout(mostrarConectados.t);
     const n = conectadosActuales.length;
-    mostrarConectados.t = setTimeout(() => anunciar(`${plural(n, 'refugio')} a menos de ${$('radioValor').textContent} km.`), 400);
+    mostrarConectados.t = setTimeout(() => anunciar(t('nRefugiosAMenos', { n, km: $('radioValor').textContent }) + '.'), 400);
   }
 }
 
@@ -1185,8 +1201,6 @@ function urlSegura(valor) {
   }
 }
 
-// Estado inicial desde la URL (enlace compartido)
-if (location.hash.length > 1) aplicarHash(hashInicial);
 
 // ---------- App instalable y uso sin conexión ----------
 if ('serviceWorker' in navigator) {
@@ -1199,7 +1213,7 @@ function actualizarConexion() {
 window.addEventListener('online', actualizarConexion);
 window.addEventListener('offline', () => {
   actualizarConexion();
-  anunciar('Sin conexión. El mapa solo muestra las zonas que ya has visto.');
+  anunciar(t('sinConexionAviso'));
 });
 actualizarConexion();
 
@@ -1218,3 +1232,114 @@ $('botonInstalar').addEventListener('click', async () => {
   $('instalar').hidden = true;
 });
 window.addEventListener('appinstalled', () => ($('instalar').hidden = true));
+
+// ---------- Rutas propias guardadas en el dispositivo (IndexedDB) ----------
+// Solo viven en este navegador: no se envían a ningún servidor.
+const MAX_RUTAS_LOCALES = 50;
+let baseDatos = null;
+function abrirBaseDatos() {
+  baseDatos ??= new Promise((ok, mal) => {
+    const pet = indexedDB.open('rutas-y-refugios', 1);
+    pet.onupgradeneeded = () => pet.result.createObjectStore('rutas', { keyPath: 'id', autoIncrement: true });
+    pet.onsuccess = () => ok(pet.result);
+    pet.onerror = () => mal(pet.error);
+  });
+  return baseDatos;
+}
+async function almacen(modo) {
+  return (await abrirBaseDatos()).transaction('rutas', modo).objectStore('rutas');
+}
+const peticion = (pet) => new Promise((ok, mal) => { pet.onsuccess = () => ok(pet.result); pet.onerror = () => mal(pet.error); });
+
+async function listarRutasLocales() {
+  try {
+    return (await peticion((await almacen('readonly')).getAll())).sort((a, b) => b.fecha - a.fecha);
+  } catch {
+    return null; // navegación privada o almacenamiento bloqueado
+  }
+}
+
+async function guardarRutaLocal(r) {
+  try {
+    const dist = r.puntos.at(-1).km;
+    const lista = (await listarRutasLocales()) || [];
+    // La misma ruta subida otra vez no se duplica: se actualiza la fecha
+    const igual = lista.find((x) => x.nombre === r.nombre && Math.abs(x.dist - dist) < 0.05);
+    const registro = { nombre: r.nombre, dist, fecha: Date.now(), puntos: r.puntos.map((p) => [p.lat, p.lon, p.ele]) };
+    if (igual) registro.id = igual.id;
+    const id = await peticion((await almacen('readwrite')).put(registro));
+    // Solo las más recientes: las antiguas se borran al pasar del límite
+    for (const vieja of lista.filter((x) => x.id !== id).slice(MAX_RUTAS_LOCALES - 1)) await borrarRutaLocal(vieja.id);
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+async function borrarRutaLocal(id) {
+  try { await peticion((await almacen('readwrite')).delete(id)); } catch { /* nada que borrar */ }
+}
+
+async function abrirRutaLocal(id, { foco = true } = {}) {
+  let r;
+  try { r = await peticion((await almacen('readonly')).get(id)); } catch { r = null; }
+  if (!r) { escribirHash(); return; } // borrada o en otro dispositivo: se ignora
+  ruta = { nombre: r.nombre, puntos: conKm(r.puntos.map(([lat, lon, ele]) => ({ lat, lon, ele }))), idLocal: r.id };
+  if (pestana !== 'subir') cambiarPestana('subir');
+  await mostrarRutaPropia({ foco });
+  escribirHash();
+}
+
+const formatoFecha = new Intl.DateTimeFormat(idioma, { day: 'numeric', month: 'short', year: 'numeric' });
+async function pintarMisRutas() {
+  const lista = await listarRutasLocales();
+  const ul = $('listaMisRutas');
+  $('misRutas').hidden = !lista?.length;
+  ul.innerHTML = '';
+  for (const r of lista || []) {
+    const li = document.createElement('li');
+    li.className = 'mi-ruta';
+    const abrir = document.createElement('button');
+    abrir.type = 'button';
+    abrir.innerHTML = `<span>${esc(r.nombre)}<small>${fKm(r.dist)} · ${formatoFecha.format(r.fecha)}</small></span>`;
+    abrir.addEventListener('click', () => abrirRutaLocal(r.id));
+    const borrar = document.createElement('button');
+    borrar.type = 'button';
+    borrar.className = 'quitar';
+    borrar.setAttribute('aria-label', t('borrarRuta', { nombre: r.nombre }));
+    borrar.title = t('borrarRuta', { nombre: r.nombre });
+    borrar.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+    borrar.addEventListener('click', async () => {
+      if (!confirm(t('confirmarBorrar', { nombre: r.nombre }))) return;
+      await borrarRutaLocal(r.id);
+      if (ruta?.idLocal === r.id) quitarRuta({ foco: false });
+      await pintarMisRutas();
+      anunciar(t('rutaBorrada'));
+      ($('listaMisRutas').querySelector('button') || $('gpx')).focus();
+    });
+    li.append(abrir, borrar);
+    ul.append(li);
+  }
+}
+if ('indexedDB' in window) pintarMisRutas();
+
+// ---------- Selector de idioma ----------
+{
+  const sel = $('idioma');
+  for (const [codigo, nombre] of Object.entries(IDIOMAS)) {
+    const op = document.createElement('option');
+    op.value = codigo;
+    op.lang = codigo;
+    op.textContent = nombre;
+    op.selected = codigo === idioma;
+    sel.append(op);
+  }
+  // Recargar con el nuevo idioma: el estado (isla, etapa, capas…) va en la URL y se conserva
+  sel.addEventListener('change', () => {
+    guardarIdioma(sel.value);
+    location.reload();
+  });
+}
+
+// Estado inicial desde la URL (enlace compartido): al final, cuando todo lo anterior ya está definido
+if (location.hash.length > 1) aplicarHash(hashInicial);

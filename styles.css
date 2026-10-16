@@ -384,3 +384,19 @@ ol.lista-botones button::before {
 .sin-conexion svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 @media (min-width: 761px) { .sin-conexion { left: calc(360px + (100% - 360px) / 2); } }
 .instalar .boton { width: 100%; }
+
+/* ---------- Rutas guardadas en el dispositivo ---------- */
+.mis-rutas { margin-top: 18px; }
+.mis-rutas h3 { margin-top: 0; }
+.lista-botones .mi-ruta { display: flex; align-items: center; gap: 4px; }
+.lista-botones .mi-ruta > button:first-child { flex: 1; width: auto; margin-right: 0; }
+.mi-ruta .quitar { margin: 0 -10px 0 0; }
+.mi-ruta .quitar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Idioma ---------- */
+.idioma { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid var(--border); }
+.idioma label { font-weight: 600; }
+.idioma select {
+  min-height: var(--toque); min-width: 10em; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--panel); color: var(--text); font: inherit; cursor: pointer;
+}

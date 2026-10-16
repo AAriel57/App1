@@ -7,9 +7,15 @@ Web comunitaria de rutas de BTT conectadas a refugios de montaña en Mallorca, M
 - Subida de un track GPX: distancia, desnivel, altitud máxima y perfil de altimetría.
 - Detecta los refugios a menos de N km de la ruta y los ordena por el km en que aparecen.
 - Filtro por isla.
-- Pestaña «Rutas Mallorca»: travesía de 7 etapas de refugio a refugio (Galatzó → s'Arenalet des Verger), con reparto de asfalto/pista/sendero y descarga en GPX.
+- Pestaña «Travesías»: 7 etapas de refugio a refugio en Mallorca (Galatzó → s'Arenalet des Verger), con reparto de asfalto/pista/sendero y descarga en GPX.
+- Perfil de altimetría enlazado al mapa y trazado coloreado por pendiente o por firme.
+- Plan por días: reparte la ruta en jornadas según km y subida diaria y propone en qué refugio dormir.
+- Mapas base topográfico y ciclista (CyclOSM), con las rutas MTB señalizadas de Waymarked Trails.
+- Enlaces compartibles: la isla, la etapa, las capas y el plan van en la dirección (`#etapa=3&mapa=bici`).
+- App instalable que funciona sin conexión con las zonas del mapa ya vistas.
+- En español, català, English y Deutsch (textos en `i18n.js`).
 
-Por ahora las rutas solo se procesan en el navegador; todavía no se guardan ni se comparten.
+Las rutas que sube cada usuario se guardan solo en su navegador (IndexedDB): todavía no se comparten con nadie.
 
 ## Ejecutar en local
 No hace falta instalar nada en Windows:
@@ -26,6 +32,8 @@ La web está en https://aariel57.github.io/App1/ y GitHub Pages la sirve desde l
 ```bash
 git push origin main:gh-pages
 ```
+
+Si cambias la lista de archivos de la app, añádelos a `sw.js` y sube su `VERSION` para que el modo sin conexión los recoja.
 
 ## Actualizar los refugios desde OpenStreetMap
 
